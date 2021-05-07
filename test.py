@@ -1,5 +1,7 @@
 import pyipmi
 import pyipmi.interfaces
+import sys
+import time
 
 # Supported interface_types for ipmitool are: 'lan' , 'lanplus', and 'serial-terminal'
 interface = pyipmi.interfaces.create_interface('ipmitool', interface_type='lan')
@@ -37,7 +39,7 @@ def print_sdr_list_entry(record_id, number, id_string, value, states):
     
 	print("0x%04x | %3s | %-18s | %9s | %s" % (record_id, number, id_string, value, states))
 
-for s in iter_fct():
+def sample_sensor(s):
 	try:
 		number = None
 		value = None
@@ -45,19 +47,53 @@ for s in iter_fct():
 
 		if s.type is pyipmi.sdr.SDR_TYPE_FULL_SENSOR_RECORD:
 			(value, states) = connection.get_sensor_reading(s.number)
-			print("FS", s.number, value, states)
 			number = s.number
+
 			if value is not None:
 				value = s.convert_sensor_raw_to_value(value)
-				print("FS AFTER CONVERT", value)
 			elif s.type is pyipmi.sdr.SDR_TYPE_COMPACT_SENSOR_RECORD:
 				(value, states) = connection.get_sensor_reading(s.number)
-				print("CS", s.number, value, states)
 				number = s.number
             
 			print_sdr_list_entry(s.id, number, s.device_id_string,
                                  value, states)
-        
+			return value
+       		 
 	except pyipmi.errors.CompletionCodeError as e:
 		if s.type in (pyipmi.sdr.SDR_TYPE_COMPACT_SENSOR_RECORD, pyipmi.sdr.SDR_TYPE_FULL_SENSOR_RECORD):
 			print('0x{:04x} | {:3d} | {:18s} | ERR: CC=0x{:02x}'.format( s.id, s.number, s.device_id_string, e.cc))
+		return None
+
+	finally:
+		return None
+
+print("Enumerating all sensors and locating sensors of interest...")
+sensors = []
+for s in iter_fct():
+	try:
+		if s.number in [82,84]:
+			sensors.append(s)
+		print(s.number, s.device_id_string)
+	except:
+		pass	
+
+if len(sensors)>0:
+	print("Found sensors of interest.")
+
+	print("Starting continuos sampling of sensors...")
+
+	while True:
+		try:
+			for s in sensors:
+				val = sample_sensor(s)
+				print(val)
+		except:
+			print("sensor read error")
+
+		time.sleep(0.25)
+
+else:
+	print("Could not locate sensors of interst.")
+
+sys.exit(0)
+
