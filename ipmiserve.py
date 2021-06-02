@@ -34,37 +34,34 @@ print("Connected to the IPMI interface at %s" % args.ip)
 # TODO: sample one
 # mon.run()
 
+#
+# Listen and respond to http messages
+#
 import tornado.web
 from tornado.ioloop import IOLoop
 from tornado import gen
 import time
 
-class TestHandler(tornado.web.RequestHandler):
-	@gen.coroutine
-	def get(self):
-		print("test")
-		self.write("ok")
-
 class PingHandler(tornado.web.RequestHandler):
 	@gen.coroutine
 	def get(self):
-		print("ping")
+		self.logger.log("ping", echo=True)
+		self.write("ok")
 
-class MarkHandler(tornado.web.RequestHandler):
+class LogHandler(tornado.web.RequestHandler):
 	@gen.coroutine
 	def get(self):
 		for arg in self.request.arguments:
 			parm = self.get_argument(arg,None)
-			print(arg,parm)
+			self.logger.log( "%s = %s" % (arg,parm), echo=True)
+		self.write("ok")
 
 app = tornado.web.Application(
-	[ 	(r"/test", TestHandler), 
-		(r"/ping", PingHandler),	
+	[ 	(r"/ping", PingHandler),	
 		(r"/mark", MarkHandler)	
-	] )
+	])
+app.logger = logger
 
 app.listen(3000)
 IOLoop.instance().start()
-
-print("done")
 

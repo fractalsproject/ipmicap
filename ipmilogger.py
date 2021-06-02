@@ -17,7 +17,7 @@ class IpmiLogger:
 		self.path = path
 		self.echo = echo
 
-	def log(self, message):
+	def log(self, message, echo=None):
 
 		f = open(self.path,'a')
 		line = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + " -- " + message
@@ -25,8 +25,12 @@ class IpmiLogger:
 		f.flush()
 		f.close()
 
-		if self.echo: print(line)
-
+		if self.echo:
+			if echo==None or echo==True: print(line)
+			else: pass
+		else:
+			if echo==True: print(line)
+			else: pass
 
 if __name__ == "__main__":
 
