@@ -4,11 +4,11 @@
 #
 import argparse
 parser = argparse.ArgumentParser(description='IPMI Monitoring Tool.')
-parser.add_argument('--ip', 	dest='ip', required=True, help='The IP address of the IPMI interface')
-parser.add_argument('--port', 	dest='port', type=int, default=623, help='The port of the IPMI interface')
+parser.add_argument('--ip', 		dest='ip', required=True, help='The IP address of the IPMI interface')
+parser.add_argument('--port', 		dest='port', type=int, default=623, help='The port of the IPMI interface')
 parser.add_argument('--username', 	dest='username', default="admin", help='The authentication username for the IPMI interface')
 parser.add_argument('--password', 	dest='password', default="admin", help='The authentication password for the IPMI interface')
-parser.add_argument('--records',dest='records', required=True, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
+parser.add_argument('--records',	dest='records', required=True, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
 args = parser.parse_args()
 print(args)
 
