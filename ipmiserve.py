@@ -10,6 +10,7 @@ parser.add_argument('--username', 	dest='username', default="admin", help='The a
 parser.add_argument('--password', 	dest='password', default="admin", help='The authentication password for the IPMI interface')
 parser.add_argument('--records',	dest='records', required=True, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
 parser.add_argument('--listen', 	dest='listen', type=int, required=True, help='The listen port for HTTP commands')
+parser.add_argument('--delay', 		dest='delay', type=int, default=1, help='The delay/sleep time between queries to the IPMI interface for a set of sensors')
 args = parser.parse_args()
 
 #
@@ -29,7 +30,8 @@ mon = IpmiMon(	ip			= args.ip,
                 username	= args.username,
 				password	= args.password,
                 records		= args.records,
-				logger		= logger )
+				logger		= logger,
+				delay		= args.delay )
 print("Connected to the IPMI interface at %s" % args.ip)
 
 # TODO: sample one
@@ -41,7 +43,12 @@ print("Connected to the IPMI interface at %s" % args.ip)
 import tornado.web
 from tornado.ioloop import IOLoop
 from tornado import gen
-import time
+from tornado import concurrent
+
+executor = concurrent.futures.ThreadPoolExecutor(8)
+def task(mon):
+	mon.run()
+executor.submit(task, mon)
 
 class LogHandler(tornado.web.RequestHandler):
 
