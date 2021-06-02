@@ -9,6 +9,7 @@ parser.add_argument('--port', 		dest='port', type=int, default=623, help='The po
 parser.add_argument('--username', 	dest='username', default="admin", help='The authentication username for the IPMI interface')
 parser.add_argument('--password', 	dest='password', default="admin", help='The authentication password for the IPMI interface')
 parser.add_argument('--records',	dest='records', required=True, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
+parser.add_argument('--listen', 	dest='listen', type=int, required=True, help='The listen port for HTTP commands')
 args = parser.parse_args()
 
 #
@@ -42,13 +43,11 @@ from tornado.ioloop import IOLoop
 from tornado import gen
 import time
 
-class PingHandler(tornado.web.RequestHandler):
-	@gen.coroutine
-	def get(self):
-		self.logger.log("ping", echo=True)
-		self.write("ok")
-
 class LogHandler(tornado.web.RequestHandler):
+
+	def initialize(self, logger):
+		self.logger = logger
+		
 	@gen.coroutine
 	def get(self):
 		for arg in self.request.arguments:
@@ -57,11 +56,12 @@ class LogHandler(tornado.web.RequestHandler):
 		self.write("ok")
 
 app = tornado.web.Application(
-	[ 	(r"/ping", PingHandler),	
-		(r"/mark", MarkHandler)	
+	[ 		
+		(r"/log", LogHandler, {'logger':logger} )
 	])
 app.logger = logger
 
-app.listen(3000)
+app.listen(args.listen)
+print("Listing on port %d" % args.listen)
 IOLoop.instance().start()
 
