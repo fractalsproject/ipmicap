@@ -10,21 +10,29 @@ parser.add_argument('--username', 	dest='username', default="admin", help='The a
 parser.add_argument('--password', 	dest='password', default="admin", help='The authentication password for the IPMI interface')
 parser.add_argument('--records',	dest='records', required=True, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
 args = parser.parse_args()
-print(args)
+
+#
+# Create a file logger
+#
+import datetime
+path = "/tmp/%s" % datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+from ipmilogger import IpmiLogger
+logger = IpmiLogger(path)
+print("Created a logger at '%s'" % path)
 
 #
 # Connect to the IPMI interface
 #
 from ipmimon import IpmiMon
-mon = IpmiMon(	logfile		= "/tmp/ipmimon.txt", 
-                ip			= args.ip, 
+mon = IpmiMon(	ip			= args.ip, 
                 username	= args.username,
 				password	= args.password,
-                records		= args.records )
-mon.run()
+                records		= args.records,
+				logger		= logger )
+print("Connected to the IPMI interface at %s" % args.ip)
 
-import sys
-sys.exit(0)
+# TODO: sample one
+# mon.run()
 
 import tornado.web
 from tornado.ioloop import IOLoop

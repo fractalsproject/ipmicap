@@ -5,29 +5,24 @@ import os
 
 class IpmiMon:
 
-	def __init__(self, 	logfile="./ipmimon.txt", 
-						ip="127.0.0.1", 
+	def __init__(self, 	ip="127.0.0.1", 
 						username="admin", 
 						password="admin", 
 						records=[],
 						max_consec_errors=2,
-						delay=0.1):
+						delay=0.1,
+						logger=None):
 
-		self.logfile 	= logfile
 		self.ip 		= ip
 		self.username 	= username
 		self.password 	= password
 		self.records 	= records
 		self.max_consec_errors = max_consec_errors
 		self.delay 		= delay
+		self.logger		= logger
 	
 	def run(self):
 		
-		if os.path.exists( self.logfile ):
-			raise Exception("ERR: The logfile exists %s" % self.logfile )
-		
-		self.loghandle = open( self.logfile, "w" )
-
 		self._get_sensors()
 
 		self.consec_errors = 0
@@ -92,7 +87,7 @@ class IpmiMon:
 					(value, states) = self.connection.get_sensor_reading(s.number)
 					number = s.number
 
-				self.print_sdr_list_entry(s.id, number, s.device_id_string, value, states)
+				self.emit_sdr_list_entry(s.id, number, s.device_id_string, value, states)
 				return value
 
 		except pyipmi.errors.CompletionCodeError as e:
@@ -103,7 +98,7 @@ class IpmiMon:
 		finally:
 			pass
 
-	def print_sdr_list_entry(self, record_id, number, id_string, value, states):
+	def emit_sdr_list_entry(self, record_id, number, id_string, value, states):
 		if number:
 			number = str(number)
 		else:
@@ -112,17 +107,15 @@ class IpmiMon:
 			states = hex(states)
 		else:
 			states = 'na'
-		print("0x%04x | %3s | %-18s | %9s | %s" % (record_id, number, id_string, value, states))
-	
+
+		message = "0x%04x | %3s | %-18s | %9s | %s" % (record_id, number, id_string, value, states)
+		if self.logger: self.logger.log(message)
+		else: print(message)
 
 
 if __name__ == "__main__":
 
-
-
-
-	ipmimon = IpmiMon( 	logfile="/tmp/ipmimon.txt", 
-						ip="192.168.99.35", 
+	ipmimon = IpmiMon( 	ip="192.168.99.35", 
 						username="admin",
 						password="admin",
 						records=[18,20] )
