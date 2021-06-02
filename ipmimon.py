@@ -118,6 +118,9 @@ class IpmiMon:
 
 if __name__ == "__main__":
 
+
+
+
 	ipmimon = IpmiMon( 	logfile="/tmp/ipmimon.txt", 
 						ip="192.168.99.35", 
 						username="admin",
