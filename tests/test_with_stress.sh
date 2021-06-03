@@ -29,7 +29,7 @@ do
 
 	echo "Launch stress cpu=$CPU"
 	log_it "stress=1&time=$STRESSTIME&cpu=$CPU"
-	if [ "$CPU" -eq "0 ]; then
+	if [ "$CPU" -eq "0" ]; then
 		sleep $STRESSTIME
 	else
 		stress --timeout $STRESSTIME --cpu $CPU
