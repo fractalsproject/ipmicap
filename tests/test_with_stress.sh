@@ -1,8 +1,8 @@
 #!/bin/bash
 
 SERVER="http://192.168.99.112:3000"
-SLEEP=10
-STRESSTIME=30
+SLEEP=20
+STRESSTIME=60
 STRESS_CPU_RANGE=56
 
 log_it () {
@@ -14,9 +14,9 @@ log_it () {
 }
 
 echo "Testing connection to ipmiserve"
-log_it "test=test_with_stress"
+log_it "test=test_with_stress_cpu_only_56"
 
-START=1
+START=0
 END=$STRESS_CPU_RANGE
 for (( CPU=$START; CPU<=$END; CPU++ ))
 do
@@ -29,7 +29,11 @@ do
 
 	echo "Launch stress cpu=$CPU"
 	log_it "stress=1&time=$STRESSTIME&cpu=$CPU"
-	stress --timeout $STRESSTIME --cpu $CPU
+	if [ "$CPU" -eq "0 ]; then
+		sleep $STRESSTIME
+	else
+		stress --timeout $STRESSTIME --cpu $CPU
+	fi
 
 	echo "Stop stress"
 	log_it "stress=0"
