@@ -4,6 +4,9 @@ SERVER="http://192.168.99.112:3000"
 SLEEP=20
 STRESSTIME=60
 STRESS_CPU_RANGE=56
+VM=1
+IO=1
+HDD=1
 
 log_it () {
 	curl --silent "$SERVER/log?$1" > /dev/null
@@ -14,7 +17,7 @@ log_it () {
 }
 
 echo "Testing connection to ipmiserve"
-log_it "test=test_with_stress_cpu_only_56"
+log_it "test=test_with_stress&cpurange=${STRESS_CPU_RANGE}&vm=${VM}&io=${IO}&hdd=${HDD}"
 
 START=0
 END=$STRESS_CPU_RANGE
@@ -32,7 +35,15 @@ do
 	if [ "$CPU" -eq "0" ]; then
 		sleep $STRESSTIME
 	else
-		stress --timeout $STRESSTIME --cpu $CPU
+		if [ "$VM" -eq "1" ] && [ "$IO" -eq "1" ] && [ "$HDD" -eq "1" ]; then
+			stress --timeout $STRESSTIME --cpu $CPU --vm $CPU --io $CPU --hdd $CPU
+		elif [ "$VM" -eq "1" ] && [ "$IO" -eq "1" ]; then
+			stress --timeout $STRESSTIME --cpu $CPU --vm $CPU --io $CPU
+		elif [ "$VM" -eq "1" ]; then
+			stress --timeout $STRESSTIME --cpu $CPU --vm $CPU
+		else
+			stress --timeout $STRESSTIME --cpu $CPU
+		fi
 	fi
 
 	echo "Stop stress"
