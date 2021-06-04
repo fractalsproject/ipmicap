@@ -6,7 +6,7 @@ STRESSTIME=60
 STRESS_CPU_RANGE=56
 VM=1
 IO=1
-HDD=1
+HDD=0
 
 log_it () {
 	curl --silent "$SERVER/log?$1" > /dev/null
@@ -14,6 +14,11 @@ log_it () {
 		echo "Message send failed."
 		exit 1
 	fi
+}
+
+send_uptime () {
+	UTENC=$(uptime | python -c "import urllib.parse;print (urllib.parse.quote(input()))")
+	log_it "uptime_enc=$UTENC"
 }
 
 echo "Testing connection to ipmiserve"
@@ -32,6 +37,7 @@ do
 
 	echo "Launch stress cpu=$CPU"
 	log_it "stress=1&time=$STRESSTIME&cpu=$CPU"
+	send_uptime
 	if [ "$CPU" -eq "0" ]; then
 		sleep $STRESSTIME
 	else
@@ -45,6 +51,7 @@ do
 			stress --timeout $STRESSTIME --cpu $CPU
 		fi
 	fi
+	send_uptime
 
 	echo "Stop stress"
 	log_it "stress=0"
