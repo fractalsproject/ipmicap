@@ -18,7 +18,7 @@ log_it () {
 
 send_uptime () {
 	UTENC=$(uptime | python -c "import urllib.parse;print (urllib.parse.quote(input()))")
-	log_it "uptime_enc=$UTENC"
+	log_it "$1_uptime_enc=$UTENC"
 }
 
 echo "Testing connection to ipmiserve"
@@ -37,7 +37,7 @@ do
 
 	echo "Launch stress cpu=$CPU"
 	log_it "stress=1&time=$STRESSTIME&cpu=$CPU"
-	send_uptime
+	send_uptime "before_stress"
 	if [ "$CPU" -eq "0" ]; then
 		sleep $STRESSTIME
 	else
@@ -51,7 +51,7 @@ do
 			stress --timeout $STRESSTIME --cpu $CPU
 		fi
 	fi
-	send_uptime
+	send_uptime "after_stress"
 
 	echo "Stop stress"
 	log_it "stress=0"
