@@ -17,7 +17,7 @@ log_it () {
 }
 
 echo "Testing connection to ipmiserve"
-log_it "test=test_with_stress&cpurange=${STRESS_CPU_RANGE}&vm=${VM}&io=${IO}"
+log_it "test=test_with_stress&cpurange=${STRESS_CPU_RANGE}&vm=${VM}&io=${IO}&hdd=${HDD}"
 
 START=0
 END=$STRESS_CPU_RANGE
