@@ -35,7 +35,7 @@ do
 	if [ "$CPU" -eq "0" ]; then
 		sleep $STRESSTIME
 	else
-		if [ "$VM" -eq "1" ] && [ "$IO" -eq "1" ] && [ "$HDD" -eq "1" ];; then
+		if [ "$VM" -eq "1" ] && [ "$IO" -eq "1" ] && [ "$HDD" -eq "1" ]; then
 			stress --timeout $STRESSTIME --cpu $CPU --vm $CPU --io $CPU --hdd $CPU
 		elif [ "$VM" -eq "1" ] && [ "$IO" -eq "1" ]; then
 			stress --timeout $STRESSTIME --cpu $CPU --vm $CPU --io $CPU
