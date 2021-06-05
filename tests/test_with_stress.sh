@@ -6,7 +6,7 @@ STRESSTIME=60
 STRESS_CPU_RANGE=56
 VM=1
 IO=1
-HDD=0
+HDD=1
 
 log_it () {
 	curl --silent "$SERVER/log?$1" > /dev/null
