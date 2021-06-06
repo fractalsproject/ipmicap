@@ -65,6 +65,7 @@ import 	tornado.web
 from 	tornado.ioloop import IOLoop
 from 	tornado import gen
 from 	tornado import concurrent
+import  urllib.parse
 
 executor = concurrent.futures.ThreadPoolExecutor(8)
 def task(mon):
@@ -80,6 +81,7 @@ class LogHandler(tornado.web.RequestHandler):
 	def get(self):
 		for arg in self.request.arguments:
 			parm = self.get_argument(arg,None)
+			if arg.endswith("_enc"): parm = parm = urllib.parse.unquote(parm)
 			self.logger.log( "%s = %s" % (arg,parm), echo=True)
 		self.write("ok")
 
