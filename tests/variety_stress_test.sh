@@ -29,7 +29,7 @@ do_test() {
 	echo "Start a timed sleep = $SLEEP"
 	log_it "sleep=$SLEEP"
 	sleep $SLEEP
-	echo "Launch stress cpu=$CPU,vm=$VM,io=$IO,hdd=$HDD,gpu=$GPU""
+	echo "Launch stress cpu=$CPU,vm=$VM,io=$IO,hdd=$HDD,gpu=$GPU"
 	log_it "stress=1&time=$STRESSTIME&cpu=$CPU&vm=$VM&io=$IO&hdd=$HDD&gpu=$GPU"
 	send_uptime "before_stress"
 	
@@ -65,10 +65,17 @@ do_test() {
 				stress --timeout $STRESSTIME --cpu $CPU --vm $CPU
 			fi
 		else
-			echo "Unsupported Test"
-			exit 1
+			if [ "$GPU" -eq "1" ]; then
+				stress --timeout $STRESSTIME --cpu $CPU &
+        		./run_gpu_burn.sh $STRESSTIME &
+				wait
+			else
+				stress --timeout $STRESSTIME --cpu $CPU
+    		fi
 		fi
 	fi
+
+    send_uptime "after_stress"
 
 	echo "Stop stress"
 	log_it "stress=0"
