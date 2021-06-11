@@ -3,6 +3,9 @@ import datetime
 import tempfile
 
 class IpmiLogger:
+	"""This class abstracts to logging-to-file functions needed by the 
+	ipmicap package.
+	"""
 
 	def __init__(self,	path=None, overwrite=False, echo=False ):
 		
@@ -17,7 +20,11 @@ class IpmiLogger:
 		self.path = path
 		self.echo = echo
 
+
 	def log(self, message, echo=None):
+		""""
+		This function logs a messages to the log file.
+		"""
 
 		f = open(self.path,'a')
 		line = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + " -- " + message
@@ -32,6 +39,9 @@ class IpmiLogger:
 			if echo==True: print(line)
 			else: pass
 
+#
+# To run the unit tests below for IpmiLogger, type "python ipmilogger.py"
+#
 if __name__ == "__main__":
 
 	path = tempfile.mkstemp()[1]

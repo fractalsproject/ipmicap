@@ -4,6 +4,12 @@ import time
 import os
 
 class IpmiMon:
+	"""
+	This class abstracts the communication with the IPMI interface for a chassis system.
+	It provides these functions:
+		* enumerates the available sensors
+		* samples requests sensors with a time delay between sampling
+	"""
 
 	def __init__(self, 	ip="127.0.0.1", 
 						username="admin", 
@@ -27,8 +33,13 @@ class IpmiMon:
 		self.device_id	= None
 		self.reservation_id = None
 		self.sensors	= []
+
 	
 	def run(self):
+		"""
+		This function will run a loop sampling the requested IPMI sensors with a 
+		delay between samples.
+		"""
 	
 		if not self.connected:
 			raise Exception("ERR: Not connected to the IPMI interface.")
@@ -52,6 +63,10 @@ class IpmiMon:
 
 
 	def connect(self):
+		"""
+		This function will connect to the IPMI interface at its
+		IP address and port with provided authentication credentials.
+		"""
 	
 		self.interface = pyipmi.interfaces.create_interface('ipmitool', interface_type='lan')
 		self.connection = pyipmi.create_connection(self.interface)
@@ -68,7 +83,13 @@ class IpmiMon:
 		self.reservation_id = self.connection.reserve_sdr_repository()
 		self.connected = True
 
+
 	def enumerate_sensors(self):
+		"""
+		This function will enumerate all the sensors available at the IPMI
+		interface of the chassis.  It will return the name of the sensor along
+		with the sensors record_id identifier."
+		"""
 
 		if not self.connected:
 			raise Exception("ERR: Not connected to the IPMI interface.")
@@ -82,13 +103,18 @@ class IpmiMon:
 		for s in iter_fct():
 			try:
 				device_id_string = s.device_id_string.decode("utf-8") 
-				print( "%s\trecord_id=%d" % (device_id_string, s.id) )
+				print( "%s\t\trecord_id=%d" % (device_id_string, s.id) )
 				#print( "%s" % (device_id_string) )
 			except:
 				pass
 		print("Done.")
 
+
 	def get_sensor_descriptions(self):
+		"""
+		This function will retrieve a full description of sensors, including
+		its name, the record_id, and IPMI numeric identifier.
+		"""
 
 		if len(self.sensors)==0:
 			self.get_sensors()
@@ -98,8 +124,13 @@ class IpmiMon:
 			descriptions.append( {'name':s.device_id_string, 'record_id':s.id, 'number':s.number } )
 	
 		return descriptions
+
 	
 	def get_sensors(self):
+		"""
+		This function retrieves the sensor object associated with a sensor's record id
+		at the IPMI interface.
+		"""
 		
 		if len(self.records)==0:
 			raise Exception("ERR: No device/sensor records requests.")
@@ -110,6 +141,7 @@ class IpmiMon:
 			self.sensors.append(s)
 
 		return True
+
 
 	def _sample_sensors(self):
 
@@ -154,6 +186,10 @@ class IpmiMon:
 			pass
 
 	def emit_sdr_list_entry(self, record_id, number, id_string, value, states):
+		"""This function will output the data associated with a sensor
+		either to a logger object or standard output, in a standard format.
+		"""
+
 		if number:
 			number = str(number)
 		else:
@@ -171,6 +207,9 @@ class IpmiMon:
 			print(message)
 
 
+#
+# To run the unit tests below for the IpmiMon class, type "python ipmimon.py"
+#
 if __name__ == "__main__":
 
 	ipmimon = IpmiMon( 	ip="192.168.99.35", 
