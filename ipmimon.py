@@ -83,6 +83,7 @@ class IpmiMon:
 			try:
 				device_id_string = s.device_id_string.decode("utf-8") 
 				print( "%s\trecord_id=%d" % (device_id_string, s.id) )
+				#print( "%s" % (device_id_string) )
 			except:
 				pass
 		print("Done.")
@@ -177,5 +178,6 @@ if __name__ == "__main__":
 						password="admin",
 						records=[18,20] )
 	ipmimon.connect()
-	ipmimon.run()
+	ipmimon.enumerate_sensors()
+	#ipmimon.run()
 
