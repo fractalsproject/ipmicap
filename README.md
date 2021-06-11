@@ -40,4 +40,4 @@ IPMICAP was developed and tested using the following:
 ## Capture and Log Sensor Data And Listen For Custom Log Messages
 * Run the following: "python ipmicap  --ip <IPMI_IP_ADDRESS>  --records [RECORD_ID_1 RECORD_ID_2 ...]  --listen [LISTEN_PORT]
 * In addition to logging sensor data to a file, this will start a web service at the LISTEN_PORT and will log those messages to the file.
-* To write a custom log message, send a GET request in this format:  http://[MACHINE]:[LISTEN_PORT]/log?message=[CUSTOM_MESSAGE] where MACHINE is the name or ip address of the machine running ipmicap.py, LISTEN_PORT is a port of your choice, and CUSTOM_MESSAGE is any urlencoded string.
+* To write a custom log message during capture, send a GET request in this format:  http://[MACHINE]:[LISTEN_PORT]/log?message=[CUSTOM_MESSAGE] where MACHINE is the name or ip address of the machine running ipmicap.py, LISTEN_PORT is a port of your choice, and CUSTOM_MESSAGE is any urlencoded string.
