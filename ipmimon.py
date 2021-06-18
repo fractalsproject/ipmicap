@@ -33,7 +33,6 @@ class IpmiMon:
 		self.device_id	= None
 		self.reservation_id = None
 		self.sensors	= []
-
 	
 	def run(self):
 		"""

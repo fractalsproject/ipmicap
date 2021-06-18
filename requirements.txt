@@ -1,2 +1,3 @@
 python-ipmi
 tornado
+pandas
