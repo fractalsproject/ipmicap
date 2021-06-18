@@ -93,19 +93,16 @@ def main():
             @gen.coroutine
             def get(self):
                 try:
-                    print("A")
-                    ret_val = None
+                    log_item = ""
                     for arg in self.request.arguments:
+                        if log_item: log_item += ","
                         parm = self.get_argument(arg,None)
                         if arg.endswith("_enc"): parm = parm = urllib.parse.unquote(parm)
-                        ret_val = self.logger.log( "%s = %s" % (arg,parm), echo=True)
-                        print("loglog", arg, parm, ret_val)
-                    print("B", ret_val)
+                        log_item += "%s = %s" % (arg,parm)
+                    ret_val = self.logger.log( log_item, echo=True)
                     if ret_val:
-                        print("C", ret_val)
                         self.write(json.dumps(ret_val))
                     else:
-                        print("D")
                         self.write(json.dumps("its ok"))
                 except:
                     print("ERR:", sys.exc_info()[0], sys.exc_info()[1])
