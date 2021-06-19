@@ -39,8 +39,16 @@ def main():
         import  datetime
         path    = os.path.join( args.path, "%s" % datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") )
         from    ipmilogger import IpmiLogger
-        logger  = IpmiLogger(path,sessions=args.sessions)
+        logger  = IpmiLogger(path, False)
         print("Created a logger at '%s'" % path)
+
+        #
+        # Create a session manager
+        #
+        from ipmisession import IpmiSessionManager
+        session_manager=None
+        if args.sessions:
+            session_manager = IpmiSessionManager()
 
         #
         # Connect to the IPMI interface
@@ -51,6 +59,7 @@ def main():
                             password    = args.password,
                             records     = args.records,
                             logger      = logger,
+                            session_manager  = session_manager,
                             delay       = args.delay)
         print("Connecting to the IPMI interface at %s..." % args.ip)
         mon.connect()
@@ -99,19 +108,54 @@ def main():
                         parm = self.get_argument(arg,None)
                         if arg.endswith("_enc"): parm = parm = urllib.parse.unquote(parm)
                         log_item += "%s = %s" % (arg,parm)
-                    ret_val = self.logger.log( log_item, echo=True)
-                    if ret_val:
-                        self.write(json.dumps(ret_val))
-                    else:
-                        self.write(json.dumps("its ok"))
+                    self.logger.log( log_item, echo=True)
+                    self.write(json.dumps(1))
                 except:
                     print("ERR:", sys.exc_info()[0], sys.exc_info()[1])
 
-        app = tornado.web.Application(
-            [       
-                (r"/log", LogHandler, {'logger':logger} )
-            ])
-        app.logger = logger
+        class SessionHandler(tornado.web.RequestHandler):
+
+            def initialize(self, session_manager):
+                self.session_manager = session_manager
+            
+            @gen.coroutine
+            def get(self):
+                try:
+                    start=False
+                    stop=False
+                    session_id=None
+                    for arg in self.request.arguments:
+                        parm = self.get_argument(arg,None)
+                        if arg=="start": start=True
+                        elif arg=="stop": stop=True
+                        elif arg=="id": session_id = parm
+
+                    dt = datetime.datetime.now()
+                    if start:
+                        self.session_manager.start( dt, session_id )
+                        self.write(json.dumps(1))
+                    elif stop:
+                        power_cons = self.session_manager.stop( dt, session_id )
+                        self.write(json.dumps(power_cons))
+
+                except:
+                    print("ERR:", sys.exc_info()[0], sys.exc_info()[1])
+                    
+        if args.sessions:
+            app = tornado.web.Application(
+                [       
+                    (r"/log", LogHandler, {'logger':logger} ),
+                    (r"/session", SessionHandler, {'session_manager':session_manager} )
+                ])
+            app.logger = logger
+            app.session_manager = session_manager
+        else:
+            app = tornado.web.Application(
+                [       
+                    (r"/log", LogHandler, {'logger':logger} ),
+                ])
+            app.logger = logger
+
 
         app.listen(args.listen)
         print("Listing on port %d" % args.listen)
