@@ -31,13 +31,14 @@ class IpmiLogger:
         self.started            = None
         self.sensors            = {}
 
-    def log(self, message, echo=None):
+    def log(self, message, echo=None, date=None):
         """"
         This function logs a messages to the log file.
         """
 
         f = open(self.path,'a')
-        now = datetime.datetime.now()
+        if date: now = date
+        else: now = datetime.datetime.now()
         line = now.strftime("%Y-%m-%d_%H:%M:%S") + " -- " + message
         f.write( line  + "\n" )
         f.flush()
