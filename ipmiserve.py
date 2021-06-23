@@ -14,7 +14,7 @@ def main():
         parser.add_argument('--records',    dest='records', required=False, default=None, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
         parser.add_argument('--listen',     dest='listen', type=int, default=None, required=False, help='The listen port for HTTP commands')
         parser.add_argument('--delay',      dest='delay', type=int, default=1, help='The delay/sleep time between queries to the IPMI interface for a set of sensors')
-        parser.add_argument('--path',       dest='path', default="/tmp/impi", help='Supply a directory where timestamped log files will be written.')
+        parser.add_argument('--path',       dest='path', default="/tmp/ipmi", help='Supply a directory where timestamped log files will be written.')
         parser.add_argument('--sessions',   dest='sessions', action='store_true', help='Will return power consumption via web requests.')
 
         args    = parser.parse_args()
@@ -115,8 +115,9 @@ def main():
 
         class SessionHandler(tornado.web.RequestHandler):
 
-            def initialize(self, session_manager):
+            def initialize(self, session_manager, logger):
                 self.session_manager = session_manager
+                self.logger = logger
             
             @gen.coroutine
             def get(self):
@@ -133,9 +134,11 @@ def main():
                     dt = datetime.datetime.now()
                     if start:
                         self.session_manager.start( dt, session_id )
+                        self.logger.log( "start_session = %s" % session_id, echo=True, date=dt )
                         self.write(json.dumps(1))
                     elif stop:
                         power_cons = self.session_manager.stop( dt, session_id )
+                        self.logger.log( "stop_session = %s" % session_id, echo=True, date=dt )
                         self.write(json.dumps(power_cons))
 
                 except:
@@ -145,7 +148,8 @@ def main():
             app = tornado.web.Application(
                 [       
                     (r"/log", LogHandler, {'logger':logger} ),
-                    (r"/session", SessionHandler, {'session_manager':session_manager} )
+                    (r"/session", SessionHandler, {'session_manager':session_manager, 
+                                                    'logger':logger } )
                 ])
             app.logger = logger
             app.session_manager = session_manager
