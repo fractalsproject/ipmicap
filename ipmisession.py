@@ -23,8 +23,7 @@ class IpmiSessionManager:
         self.started[session_id]  = dt
         self.capture_sessions[session_id] = []
 
-    def stop(self, dt, session_id):
-
+    def stop(self, dt, session_id, all_stats=False):
         if not session_id in self.capture_sessions:
             print("ERR: invalid session_id for stop", session_id )
             return -1
@@ -33,10 +32,13 @@ class IpmiSessionManager:
             print("Warning: No session was started for", session_id) 
             return -1
         else:
-            power_cons = self._compute_session( self.started[session_id], dt, session_id )
+            power_stats = self._compute_session( self.started[session_id], dt, session_id )
             self.started.pop(session_id, None)
             self.capture_sessions.pop(session_id, None)
-            return power_cons
+            if all_stats:
+                return power_stats
+            else:
+                return power_stats["tot_power"]
 
     def sensor(self, dt, sensor_id, value):
 
@@ -82,5 +84,5 @@ class IpmiSessionManager:
         for sensor_id in self.sensors.keys():
             tot_power += powers[sensor_id]
 
-        return tot_power
+        return {"per_sensor":per_sensor, "tot_power":tot_power, "powers":powers}
 

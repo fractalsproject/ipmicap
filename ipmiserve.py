@@ -125,10 +125,15 @@ def main():
                     start=False
                     stop=False
                     session_id=None
+                    all_stats=False
+
                     for arg in self.request.arguments:
                         parm = self.get_argument(arg,None)
                         if arg=="start": start=True
-                        elif arg=="stop": stop=True
+                        elif arg=="stop": 
+                            stop=True
+                            if parm=="all_stats":
+                                all_stats=True
                         elif arg=="id": session_id = parm
 
                     dt = datetime.datetime.now()
@@ -137,7 +142,7 @@ def main():
                         self.logger.log( "start_session = %s" % session_id, echo=True, date=dt )
                         self.write(json.dumps(1))
                     elif stop:
-                        power_cons = self.session_manager.stop( dt, session_id )
+                        power_cons = self.session_manager.stop( dt, session_id, all_stats=all_stats )
                         self.logger.log( "stop_session = %s" % session_id, echo=True, date=dt )
                         self.write(json.dumps(power_cons))
 
