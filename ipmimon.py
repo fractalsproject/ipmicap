@@ -18,7 +18,8 @@ class IpmiMon:
                         max_consec_errors=2,
                         logger=None,
                         session_manager=None,
-                        delay=0.1):
+                        delay=0.1,
+                        dcmi_power=False):
 
         self.ip         = ip
         self.username   = username
@@ -28,6 +29,7 @@ class IpmiMon:
         self.delay      = delay
         self.logger     = logger
         self.session_manager = session_manager
+        self.dcmi_power = dcmi_power
         self.connected  = False
         self.consec_errors = 0
         self.interface  = None
@@ -35,7 +37,7 @@ class IpmiMon:
         self.device_id  = None
         self.reservation_id = None
         self.sensors    = []
-    
+
     def run(self):
         """
         This function will run a loop sampling the requested IPMI sensors with a 
@@ -44,44 +46,84 @@ class IpmiMon:
     
         if not self.connected:
             raise Exception("ERR: Not connected to the IPMI interface.")
-    
-        if len(self.sensors)==0:
-            self.get_sensors()
-
-        if self.logger:
-            descriptions = self.get_sensor_descriptions()
-            for descr in descriptions:
-                message = "SENSOR: %s %d %d" % (descr['name'], descr['record_id'], descr['number'] )
+  
+        # Intialize/validate the sensors 
+        if self.dcmi_power: 
+            if self.logger:
+                message = "SENSOR: dcmi_power -1 0"
                 self.logger.log(message)
+        else:
+            if len(self.sensors)==0:
+                self.get_sensors()
+
+            if self.logger:
+                descriptions = self.get_sensor_descriptions()
+                for descr in descriptions:
+                    message = "SENSOR: %s %d %d" % (descr['name'], descr['record_id'], descr['number'] )
+                    self.logger.log(message)
 
         self.consec_errors = 0
-    
+   
+        # Sample the sensors 
         while True:
 
-            self._sample_sensors()
+            if self.dcmi_power:
+                self._sample_dcmi_power() 
+            else:
+                self._sample_sensors()
 
             time.sleep( self.delay )    
-
 
     def connect(self):
         """
         This function will connect to the IPMI interface at its
         IP address and port with provided authentication credentials.
         """
-    
-        self.interface = pyipmi.interfaces.create_interface('ipmitool', interface_type='lan')
+        self.interface = pyipmi.interfaces.create_interface('ipmitool',
+                                                       interface_type='lanplus')
         self.connection = pyipmi.create_connection(self.interface)
-        self.connection.target = pyipmi.Target(ipmb_address=0x20)
-        self.connection.session.set_session_type_rmcp(self.ip, port=623)
-        self.connection.session.set_auth_type_user( self.username, self.password)
+        self.connection.session.set_session_type_rmcp(self.ip, 623)
+        self.connection.session.set_auth_type_user(self.username, self.password)
         self.connection.session.establish()
+        self.connection.target = pyipmi.Target(ipmb_address=0x20)
 
-        self.device_id = self.connection.get_device_id()
+        if False:
+            for selector in range(1, 6):
+                caps = self.connection.get_dcmi_capabilities(selector)
+                print('Selector: {} '.format(selector))
+                print('  version:  {} '.format(caps.specification_conformence))
+                print('  revision: {}'.format(caps.parameter_revision))
+                print('  data:     {}'.format(caps.parameter_data))
 
-        if not self.device_id.supports_function('sdr_repository'):
-            raise Exception("ERR: IPMI does not support 'sdr_repository' function.")
+            rsp = self.connection.get_power_reading(1)
 
-        self.reservation_id = self.connection.reserve_sdr_repository()
+        if False:
+            print('Power Reading')
+            print('  current:   {}'.format(rsp.current_power))
+            print('  minimum:   {}'.format(rsp.minimum_power))
+            print('  maximum:   {}'.format(rsp.maximum_power))
+            print('  average:   {}'.format(rsp.average_power))
+            print('  timestamp: {}'.format(rsp.timestamp))
+            print('  period:    {}'.format(rsp.period))
+            print('  state:     {}'.format(rsp.reading_state))
+    
+        if False: 
+            self.interface = pyipmi.interfaces.create_interface('ipmitool', interface_type='lan')
+            self.connection = pyipmi.create_connection(self.interface)
+            self.connection.target = pyipmi.Target(ipmb_address=0x20)
+            self.connection.session.set_session_type_rmcp(self.ip, port=623)
+            self.connection.session.set_auth_type_user( self.username, self.password)
+            self.connection.session.establish()
+
+        if self.dcmi_power:
+            pass
+        else:
+            self.device_id = self.connection.get_device_id()
+
+            if not self.device_id.supports_function('sdr_repository'):
+                raise Exception("ERR: IPMI does not support 'sdr_repository' function.")
+
+            self.reservation_id = self.connection.reserve_sdr_repository()
         self.connected = True
 
 
@@ -185,6 +227,41 @@ class IpmiMon:
 
         finally:
             pass
+
+    def _sample_dcmi_power(self):
+        try:
+
+            rsp = self.connection.get_power_reading(1)
+
+            if False:
+                print('Power Reading')
+                print('  current:   {}'.format(rsp.current_power))
+                print('  minimum:   {}'.format(rsp.minimum_power))
+                print('  maximum:   {}'.format(rsp.maximum_power))
+                print('  average:   {}'.format(rsp.average_power))
+                print('  timestamp: {}'.format(rsp.timestamp))
+                print('  period:    {}'.format(rsp.period))
+                print('  state:     {}'.format(rsp.reading_state))
+                print("cp", type(rsp.current_power), rsp.current_power)
+                
+            self.emit_dcmi_power(-1, "%d" % rsp.current_power)
+
+        except:
+            print("Sample dcmi power error:", sys.exc_info()[0])
+
+        finally:
+            pass 
+
+    def emit_dcmi_power(self, record_id, value):
+        if self.logger:
+            message = "%d : %s" % ( record_id, value)
+            dt = self.logger.log(message)
+            if self.session_manager:
+                self.session_manager.sensor(dt, record_id, float(value) )
+        else:
+            message = "0x%04x | %9s " % (record_id, number, id_string, value, states)
+            print(message)
+
 
     def emit_sdr_list_entry(self, record_id, number, id_string, value, states):
         """This function will output the data associated with a sensor
