@@ -11,12 +11,13 @@ class IpmiSessionManager:
     collected session sensor data.
     """
 
-    def __init__(self):
+    def __init__(self, debug=False):
 
         self.session_started    = False
         self.started            = {}
         self.sensors            = {}
         self.capture_sessions   = {}
+        self.debug              = debug
 
     def start(self, dt, session_id):
 

@@ -2,6 +2,8 @@ import pyipmi
 import pyipmi.interfaces
 import time
 import os
+import sys
+import traceback
 
 class IpmiMon:
     """
@@ -19,7 +21,8 @@ class IpmiMon:
                         logger=None,
                         session_manager=None,
                         delay=0.1,
-                        dcmi_power=False):
+                        dcmi_power=False,
+                        debug=False):
 
         self.ip         = ip
         self.username   = username
@@ -37,6 +40,7 @@ class IpmiMon:
         self.device_id  = None
         self.reservation_id = None
         self.sensors    = []
+        self.debug      = debug
 
     def run(self):
         """
@@ -97,7 +101,6 @@ class IpmiMon:
 
             rsp = self.connection.get_power_reading(1)
 
-        if False:
             print('Power Reading')
             print('  current:   {}'.format(rsp.current_power))
             print('  minimum:   {}'.format(rsp.minimum_power))
@@ -107,7 +110,6 @@ class IpmiMon:
             print('  period:    {}'.format(rsp.period))
             print('  state:     {}'.format(rsp.reading_state))
     
-        if False: 
             self.interface = pyipmi.interfaces.create_interface('ipmitool', interface_type='lan')
             self.connection = pyipmi.create_connection(self.interface)
             self.connection.target = pyipmi.Target(ipmb_address=0x20)
@@ -116,7 +118,7 @@ class IpmiMon:
             self.connection.session.establish()
 
         if self.dcmi_power:
-            pass
+            pass #TODO: insert initialization activites here...
         else:
             self.device_id = self.connection.get_device_id()
 
@@ -231,9 +233,10 @@ class IpmiMon:
     def _sample_dcmi_power(self):
         try:
 
+            if self.debug: print("About to call dcmi get_power_readings...")
             rsp = self.connection.get_power_reading(1)
-
-            if False:
+            if self.debug: 
+                print("get_power_readings called completed.")
                 print('Power Reading')
                 print('  current:   {}'.format(rsp.current_power))
                 print('  minimum:   {}'.format(rsp.minimum_power))
@@ -242,12 +245,12 @@ class IpmiMon:
                 print('  timestamp: {}'.format(rsp.timestamp))
                 print('  period:    {}'.format(rsp.period))
                 print('  state:     {}'.format(rsp.reading_state))
-                print("cp", type(rsp.current_power), rsp.current_power)
-                
+               
             self.emit_dcmi_power(-1, "%d" % rsp.current_power)
 
         except:
             print("Sample dcmi power error:", sys.exc_info()[0])
+            traceback.print_exc()
 
         finally:
             pass 

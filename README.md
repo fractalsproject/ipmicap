@@ -54,7 +54,7 @@ IPMICAP was developed and tested using the following:
 
 * To write a custom log message during capture, send a GET request in this format:  http://[MACHINE]:[LISTEN_PORT]/log?message=[CUSTOM_MESSAGE] where MACHINE is the name or ip address of the machine running ipmicap.py, LISTEN_PORT is a port of your choice, and CUSTOM_MESSAGE is any urlencoded string.
 
-## T3 Competition
+## BigANN T3 Competition
 
 The BigANN benchmarks T3 track leverages IPMICAP for power consumption benchmarks.
 
@@ -73,6 +73,8 @@ where:
 * PASSWORD = the password credentials to the IPMI interface
 * LISTEN_PORT = any available port from which to listen to API requests
 
+Make sure to provide the following flags when you run the BigANN compevaluation run script (run.py):  "--t3 --power-capture <IP>:<PORT>:10" where IP and PORT are associated with your IPMICAP server instance.
+
 ### Supermicro Chassis
 
 To monitor the power consumption for a Supermicro chassis/motherboard run the following:
@@ -85,6 +87,7 @@ where:
 * PASSWORD = the password credentials to the IPMI interface
 * LISTEN_PORT = any available port from which to listen to API requests
 
+Make sure to provide the following flags when you run the BigANN compevaluation run script (run.py):  "--t3 --power-capture <IP>:<PORT>:10" where IP and PORT are associated with your IPMICAP server instance.
 
 # TODO
 
