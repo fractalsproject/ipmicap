@@ -13,13 +13,17 @@ def main():
         parser.add_argument('--enumerate',  dest='enumerate', default=False, action="store_true", help='Enumerate all available sensors showing sensor name and record id')
         parser.add_argument('--records',    dest='records', required=False, default=None, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
         parser.add_argument('--listen',     dest='listen', type=int, default=None, required=False, help='The listen port for HTTP commands')
-        parser.add_argument('--delay',      dest='delay', type=int, default=1, help='The delay/sleep time between queries to the IPMI interface for a set of sensors')
+        parser.add_argument('--delay',      dest='delay', type=float, default=0.25, help='The delay/sleep time between queries to the IPMI interface for a set of sensors')
         parser.add_argument('--path',       dest='path', default="/tmp/ipmi", help='Supply a directory where timestamped log files will be written.')
+        parser.add_argument('--dcmi-power', dest='dcmi_power', action='store_true', help='Sample power via dcmi interface.')
         parser.add_argument('--sessions',   dest='sessions', action='store_true', help='Will return power consumption via web requests.')
+        parser.add_argument('--debug',      dest='debug', action='store_true', help='Print lots of verbose debugging related messages.')
 
         args    = parser.parse_args()
 
-        if not args.enumerate and not args.records:
+        if args.dcmi_power:
+            print("Sampling power using dcmi interface.")
+        elif not args.enumerate and not args.records:
             print("--enumerate or --records argument needs to be supplied.")
             parser.print_help()
             parser.exit()
@@ -48,7 +52,7 @@ def main():
         from ipmisession import IpmiSessionManager
         session_manager=None
         if args.sessions:
-            session_manager = IpmiSessionManager()
+            session_manager = IpmiSessionManager( args.debug )
 
         #
         # Connect to the IPMI interface
@@ -60,7 +64,9 @@ def main():
                             records     = args.records,
                             logger      = logger,
                             session_manager  = session_manager,
-                            delay       = args.delay)
+                            delay       = args.delay,
+                            dcmi_power  = args.dcmi_power,
+                            debug       = args.debug )
         print("Connecting to the IPMI interface at %s..." % args.ip)
         mon.connect()
         print("Connected to the IPMI interface at %s." % args.ip)

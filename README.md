@@ -54,6 +54,41 @@ IPMICAP was developed and tested using the following:
 
 * To write a custom log message during capture, send a GET request in this format:  http://[MACHINE]:[LISTEN_PORT]/log?message=[CUSTOM_MESSAGE] where MACHINE is the name or ip address of the machine running ipmicap.py, LISTEN_PORT is a port of your choice, and CUSTOM_MESSAGE is any urlencoded string.
 
+## BigANN T3 Competition
+
+The BigANN benchmarks T3 track leverages IPMICAP for power consumption benchmarks.
+
+Depending on the chassis/motherboard, you will need to start the server in one of the following ways.
+
+### Advantech Chassis
+
+To monitor the power consumption for Advantech chassis/motherboard run the following:
+
+```python ipmicap --ip <IPMI_IP_ADDRESS> --records [RECORD_ID_1 RECORD_ID_2 ... ] --usernmae <NAME> --password <PASSWORD> --listen [LISTEN_PORT] --sessions```
+
+where:
+* IPMI_IP_ADDRES = the ip address of the machine's IPMI interface
+* RECORD_ID_X = the record ID of the sensor
+* NAME = the username credentials to the IPMI interface
+* PASSWORD = the password credentials to the IPMI interface
+* LISTEN_PORT = any available port from which to listen to API requests
+
+Make sure to provide the following flags when you run the BigANN compevaluation run script (run.py):  "--t3 --power-capture <IP>:<PORT>:10" where IP and PORT are associated with your IPMICAP server instance.
+
+### Supermicro Chassis
+
+To monitor the power consumption for a Supermicro chassis/motherboard run the following:
+
+```python ipmicap --ip <IPMI_IP_ADDRESS> --dcmi-power --usernmae <NAME> --password <PASSWORD> --listen [LISTEN_PORT] --sessions```
+
+where:
+* IPMI_IP_ADDRES = the ip address of the machine's IPMI interface
+* NAME = the username credentials to the IPMI interface
+* PASSWORD = the password credentials to the IPMI interface
+* LISTEN_PORT = any available port from which to listen to API requests
+
+Make sure to provide the following flags when you run the BigANN compevaluation run script (run.py):  "--t3 --power-capture <IP>:<PORT>:10" where IP and PORT are associated with your IPMICAP server instance.
+
 # TODO
 
 * Allow user to specify path to log file
