@@ -16,6 +16,7 @@ def main():
         parser.add_argument('--delay',      dest='delay', type=float, default=0.25, help='The delay/sleep time between queries to the IPMI interface for a set of sensors')
         parser.add_argument('--path',       dest='path', default="/tmp/ipmi", help='Supply a directory where timestamped log files will be written.')
         parser.add_argument('--dcmi-power', dest='dcmi_power', action='store_true', help='Sample power via dcmi interface.')
+        parser.add_argument('--nvidia',     dest='nvidia', type=int, default=0, help='Sample N Nvidia GPUs')
         parser.add_argument('--sessions',   dest='sessions', action='store_true', help='Will return power consumption via web requests.')
         parser.add_argument('--debug',      dest='debug', action='store_true', help='Print lots of verbose debugging related messages.')
 
@@ -25,6 +26,11 @@ def main():
             print("Sampling power using dcmi interface.")
         elif not args.enumerate and not args.records:
             print("--enumerate or --records argument needs to be supplied.")
+            parser.print_help()
+            parser.exit()
+            sys.exit(1)
+        elif args.nvidia>0 and not args.dcmi_power:
+            print("--nvidia [N] requires the --dcmi-power flag")
             parser.print_help()
             parser.exit()
             sys.exit(1)
@@ -66,6 +72,7 @@ def main():
                             session_manager  = session_manager,
                             delay       = args.delay,
                             dcmi_power  = args.dcmi_power,
+                            nvidia      = args.nvidia,
                             debug       = args.debug )
         print("Connecting to the IPMI interface at %s..." % args.ip)
         mon.connect()

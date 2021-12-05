@@ -22,6 +22,7 @@ class IpmiMon:
                         session_manager=None,
                         delay=0.1,
                         dcmi_power=False,
+                        nvidia=0,
                         debug=False):
 
         self.ip         = ip
@@ -33,6 +34,7 @@ class IpmiMon:
         self.logger     = logger
         self.session_manager = session_manager
         self.dcmi_power = dcmi_power
+        self.nvidia     = nvidia
         self.connected  = False
         self.consec_errors = 0
         self.interface  = None
@@ -56,6 +58,10 @@ class IpmiMon:
             if self.logger:
                 message = "SENSOR: dcmi_power -1 0"
                 self.logger.log(message)
+            if self.nvidia>0:
+                for i in range(self.nvidia):
+                    message = "SENSOR: NV%d %d 0" % (i,i)
+                    self.logger.log(message)
         else:
             if len(self.sensors)==0:
                 self.get_sensors()
@@ -73,6 +79,9 @@ class IpmiMon:
 
             if self.dcmi_power:
                 self._sample_dcmi_power() 
+
+                if self.nvidia>0:
+                    self._sample_nvidia()
             else:
                 self._sample_sensors()
 
@@ -229,6 +238,45 @@ class IpmiMon:
 
         finally:
             pass
+
+    def _sample_nvidia(self):
+        try:
+            if self.debug: print("About to call nvidia-smi for power...")
+
+            cmd = "nvidia-smi --query-gpu=index,power.draw --format=csv"
+            if self.debug: print("running nvidia-smi command", cmd)
+            stream = os.popen(cmd)
+            outp = stream.read()
+            if self.debug: print("result of cmd=", outp)
+
+            # parse csv shape response
+            lines = [ ln for ln in outp.split('\n') if ln.strip()!="" ]
+            if self.debug: print("nvidia lines", lines)
+            if len(lines)!= self.nvidia + 1:
+                print("ERROR: Could not find %d Nvidia boards but found %d" % ( self.nvidia, len(lines)-1 ))
+                return
+            powers = [ (int(ln.strip().split(",")[0]), \
+                        float(ln.strip().split(",")[1].strip().split()[0] )) \
+                        for ln in lines[1:] ]
+            if self.debug: print("nvidia power(s)", powers)
+
+            self.emit_nvidia_power( powers )
+
+        except:
+            print("Sample nvidia power error:", sys.exc_info()[0])
+            traceback.print_exc()
+
+    def emit_nvidia_power(self, powers):
+        if self.logger:
+            for power in powers:
+                record_id, value = power
+                message = "%d : %s" % ( record_id, value)
+                dt = self.logger.log(message)
+                if self.session_manager:
+                    self.session_manager.sensor(dt, record_id, float(value) )
+        else:
+            message = "%d : %s" % ( record_id, value)
+            print(message)
 
     def _sample_dcmi_power(self):
         try:
