@@ -85,5 +85,5 @@ class IpmiSessionManager:
         for sensor_id in self.sensors.keys():
             tot_power += powers[sensor_id]
 
-        return {"per_sensor":per_sensor, "tot_power":tot_power, "powers":powers, "start_time":start_time, "end_time":end_time}
+        return {"per_sensor":per_sensor, "tot_power":tot_power, "powers":powers, "start_time":str(start_time), "end_time":str(end_time)}
 
