@@ -45,10 +45,10 @@ class IpmiLogger:
         f.close()
 
         if self.echo:
-            if echo==None or echo==True: print(line)
+            if echo==None or echo==True: print("%s:" % sys.argv[0], line)
             else: pass
         else:
-            if echo==True: print(line)
+            if echo==True: print("%s:" % sys.argv[0], line)
             else: pass
         
         return now
@@ -59,7 +59,7 @@ class IpmiLogger:
 if __name__ == "__main__":
 
     path = tempfile.mkstemp()[1]
-    print("Created temp file %s\n" % path)
+    print("%s: Created temp file %s\n" % (sys.argv[0],path))
 
     logger = IpmiLogger( path=path, overwrite=True, echo=True )
     logger.log("test")
@@ -67,6 +67,6 @@ if __name__ == "__main__":
     f = open(path)
     contents = f.read()
     f.close()
-    print("\nlog file contents->\n%s" % contents)
+    print("\n%s: log file contents->\n%s" % (sys.argv[0],contents))
 
     os.unlink(path)
