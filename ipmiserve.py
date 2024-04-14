@@ -109,8 +109,9 @@ def main():
 
         class LogHandler(tornado.web.RequestHandler):
 
-            def initialize(self, logger):
+            def initialize(self, logger, verbose=False):
                 self.logger = logger
+                self.verbose = verbose
                 
             @gen.coroutine
             def get(self):
@@ -121,7 +122,7 @@ def main():
                         parm = self.get_argument(arg,None)
                         if arg.endswith("_enc"): parm = parm = urllib.parse.unquote(parm)
                         log_item += "%s = %s" % (arg,parm)
-                    self.logger.log( log_item, echo=True)
+                    self.logger.log( log_item, echo=self.verbose)
                     self.write(json.dumps(1))
                 except:
                     print("%s: ERROR:" % sys.argv[0], sys.exc_info()[0], sys.exc_info()[1])
