@@ -67,6 +67,6 @@ if __name__ == "__main__":
     f = open(path)
     contents = f.read()
     f.close()
-    print("\n%s: log file contents->\n%s" % (sys.argv[0],contents))
+    print("%s: log file contents->\n%s" % (sys.argv[0],contents))
 
     os.unlink(path)
