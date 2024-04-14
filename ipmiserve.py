@@ -23,14 +23,14 @@ def main():
         args    = parser.parse_args()
 
         if args.dcmi_power:
-            if args.debug: print("Sampling power using dcmi interface.")
+            if args.debug: print("%s: Sampling power using dcmi interface." % sys.argv[0])
         elif not args.enumerate and not args.records:
-            print("ERROR: --enumerate or --records argument needs to be supplied.")
+            print("%s: ERROR: --enumerate or --records argument needs to be supplied." % sys.argv[0])
             parser.print_help()
             parser.exit()
             sys.exit(1)
         elif args.nvidia>0 and not args.dcmi_power:
-            if args.debug: print("--nvidia [N] requires the --dcmi-power flag")
+            if args.debug: print("%s: --nvidia [N] requires the --dcmi-power flag" % sys.argv[0])
             parser.print_help()
             parser.exit()
             sys.exit(1)
@@ -40,7 +40,7 @@ def main():
         #
         import os
         if not os.path.exists( args.path ):
-            if args.debug: print("Warning: Making directory %s" % args.path)
+            if args.debug: print("%s: Warning: Making directory %s" % (sys.argv[1], args.path))
             os.makedirs(args.path, exist_ok=True)   
     
         #
@@ -50,7 +50,7 @@ def main():
         path    = os.path.join( args.path, "%s" % datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") )
         from    ipmilogger import IpmiLogger
         logger  = IpmiLogger(path, False)
-        if args.debug: print("Created a logger at '%s'" % path)
+        if args.debug: print("%s: Created a logger at '%s'" % (sys.argv[0], path))
 
         #
         # Create a session manager
@@ -74,9 +74,9 @@ def main():
                             dcmi_power  = args.dcmi_power,
                             nvidia      = args.nvidia,
                             debug       = args.debug )
-        if args.debug: print("Connecting to the IPMI interface at %s..." % args.ip)
+        if args.debug: print("%s: Connecting to the IPMI interface at %s..." % ( sys.argv[0], args.ip))
         mon.connect()
-        if args.debug: print("Connected to the IPMI interface at %s." % args.ip)
+        if args.debug: print("%s: Connected to the IPMI interface at %s." % (sys.argv[0],args.ip))
 
         #
         # Enumerate sensors if requested
@@ -89,7 +89,7 @@ def main():
         # Monitor sensors ( don't listen for http commands )
         #
         if  not args.listen:
-            if args.debug: print("Monitoring the following records: ", args.records )
+            if args.debug: print("%s: Monitoring the following records: ", (sys.argv[0],args.records ))
             mon.run()
 
         #
@@ -124,7 +124,7 @@ def main():
                     self.logger.log( log_item, echo=True)
                     self.write(json.dumps(1))
                 except:
-                    print("ERROR:", sys.exc_info()[0], sys.exc_info()[1])
+                    print("%s: ERROR:" % sys.argv[0], sys.exc_info()[0], sys.exc_info()[1])
 
         class SessionHandler(tornado.web.RequestHandler):
 
@@ -160,7 +160,7 @@ def main():
                         self.write(json.dumps(power_cons))
 
                 except:
-                    print("ERROR:", sys.exc_info()[0], sys.exc_info()[1])
+                    print("%s: ERROR:" % sys.argv[0], sys.exc_info()[0], sys.exc_info()[1])
                     
         if args.sessions:
             app = tornado.web.Application(
@@ -180,6 +180,6 @@ def main():
 
 
         app.listen(args.listen)
-        if args.debug: print("Listing on port %d" % args.listen)
+        if args.debug: print("%s: Listing on port %d" % (sys.argv[0],args.listen))
         IOLoop.instance().start()
 
