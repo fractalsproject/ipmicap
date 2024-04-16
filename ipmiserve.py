@@ -109,7 +109,7 @@ def main():
 
         class LogHandler(tornado.web.RequestHandler):
 
-            def initialize(self, logger, verbose=False):
+            def initialize(self, logger, verbose):
                 self.logger = logger
                 self.verbose = verbose
                 
@@ -166,7 +166,7 @@ def main():
         if args.sessions:
             app = tornado.web.Application(
                 [       
-                    (r"/log", LogHandler, {'logger':logger} ),
+                    (r"/log", LogHandler, {'logger':logger, 'verbose':args.debug} ),
                     (r"/session", SessionHandler, {'session_manager':session_manager, 
                                                     'logger':logger } )
                 ])
