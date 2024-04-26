@@ -89,7 +89,7 @@ def main():
         # Monitor sensors ( don't listen for http commands )
         #
         if  not args.listen:
-            if args.debug: print("%s: Monitoring the following records: ", (sys.argv[0],args.records ))
+            if args.debug: print("%s: Monitoring the following records: " % sys.argv[0],args.records )
             mon.run()
 
         #
