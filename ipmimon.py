@@ -13,7 +13,8 @@ class IpmiMon:
         * samples requests sensors with a time delay between sampling
     """
 
-    def __init__(self,  ip="127.0.0.1", 
+    def __init__(self,  ip="127.0.0.1",
+                        iface="lanplus",
                         username="admin", 
                         password="admin", 
                         records=[],
@@ -26,6 +27,7 @@ class IpmiMon:
                         debug=False):
 
         self.ip         = ip
+        self.iface      = iface
         self.username   = username
         self.password   = password
         self.records    = records
@@ -92,8 +94,8 @@ class IpmiMon:
         This function will connect to the IPMI interface at its
         IP address and port with provided authentication credentials.
         """
-        self.interface = pyipmi.interfaces.create_interface('ipmitool',
-                                                       interface_type='lanplus')
+        if self.debug: print("%s: using interface_type=" % type(self).__name__, self.iface)
+        self.interface = pyipmi.interfaces.create_interface('ipmitool', interface_type=self.iface)
         self.connection = pyipmi.create_connection(self.interface)
         self.connection.session.set_session_type_rmcp(self.ip, 623)
         self.connection.session.set_auth_type_user(self.username, self.password)
@@ -149,11 +151,15 @@ class IpmiMon:
             raise Exception("ERR: Not connected to the IPMI interface.")
 
         if self.device_id.supports_function('sdr_repository'):
+            if self.debug: print("%s: using sdr_repository interface" % type(self).__name__)
             iter_fct = self.connection.sdr_repository_entries
         elif device_id.supports_function('sensor'):
+            if self.debug: print("%s: using sensor interface" % type(self).__name__)
             iter_fct = self.connection.device_sdr_entries
+        else:
+            if self.debug: print("%s: using default interface" % type(self).__name__)
 
-        print("Enumerating all sensors...")
+        if self.debug: print("%s: Enumerating all sensors..." % type(self).__name__)
         for s in iter_fct():
             try:
                 device_id_string = s.device_id_string.decode("utf-8") 
@@ -343,11 +349,13 @@ class IpmiMon:
 #
 if __name__ == "__main__":
 
-    ipmimon = IpmiMon(  ip="192.168.99.35", 
+    ipmimon = IpmiMon(  ip="192.168.199.46", 
+                        iface="lan", # try also 'lanplus'
                         username="admin",
-                        password="admin",
-                        records=[18,20] )
+                        password="CoreDev8879OOlki",
+                        records=[18,20],
+                        debug=True)
     ipmimon.connect()
-    ipmimon.enumerate_sensors()
-    #ipmimon.run()
+    #ipmimon.enumerate_sensors()
+    ipmimon.run()
 

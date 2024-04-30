@@ -10,6 +10,7 @@ def main():
         parser.add_argument('--port',       dest='port', type=int, default=623, help='The port of the IPMI interface')
         parser.add_argument('--username',   dest='username', default="admin", help='The authentication username for the IPMI interface')
         parser.add_argument('--password',   dest='password', default="admin", help='The authentication password for the IPMI interface')
+        parser.add_argument('--iface',      dest='iface', required=False, default="lan", help='The ipmi interface to use (try "lanplus" or "lan"')
         parser.add_argument('--enumerate',  dest='enumerate', default=False, action="store_true", help='Enumerate all available sensors showing sensor name and record id')
         parser.add_argument('--records',    dest='records', required=False, default=None, metavar='RECORD_ID', type=int, nargs='+', help='The sensor(s) to retrieve via the record id')
         parser.add_argument('--listen',     dest='listen', type=int, default=None, required=False, help='The listen port for HTTP commands')
