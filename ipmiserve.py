@@ -66,6 +66,7 @@ def main():
         #
         from    ipmimon import IpmiMon
         mon     = IpmiMon(  ip          = args.ip, 
+                            iface       = args.iface,
                             username    = args.username,
                             password    = args.password,
                             records     = args.records,

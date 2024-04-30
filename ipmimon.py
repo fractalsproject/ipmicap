@@ -14,7 +14,7 @@ class IpmiMon:
     """
 
     def __init__(self,  ip="127.0.0.1",
-                        iface="lanplus",
+                        iface="lan",
                         username="admin", 
                         password="admin", 
                         records=[],
