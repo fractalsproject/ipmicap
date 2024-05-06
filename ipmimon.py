@@ -4,6 +4,7 @@ import time
 import os
 import sys
 import traceback
+import datetime
 
 class IpmiMon:
     """
@@ -341,7 +342,7 @@ class IpmiMon:
                 self.session_manager.sensor(dt, record_id, float(value) )
         else: 
             message = "0x%04x | %3s | %-18s | %9s | %s" % (record_id, number, id_string, value, states)
-            print(message)
+            print(datetime.datetime.now(), message)
 
 
 #
@@ -354,6 +355,7 @@ if __name__ == "__main__":
                         username="admin",
                         password="CoreDev8879OOlki",
                         records=[18,20],
+                        delay=0.05, 
                         debug=True)
     ipmimon.connect()
     #ipmimon.enumerate_sensors()
