@@ -103,10 +103,18 @@ def main():
         from    tornado import concurrent
         import  urllib.parse
         import  json
+        import  traceback
+        from    threading import Event
 
+        # The actual ipmi sensor monitoring happens in a thread pool
+        stop_event = Event()
         executor = concurrent.futures.ThreadPoolExecutor(8)
         def task(mon):
-            mon.run()
+            try:
+                mon.run(stop_event)
+            except:
+                print("%s: Critical error in threadpool ipmimon executor loop" % sys.argv[0])
+                traceback.print_exc()
         executor.submit(task, mon)
 
         class LogHandler(tornado.web.RequestHandler):
@@ -182,7 +190,11 @@ def main():
             app.logger = logger
 
 
-        app.listen(args.listen)
-        if args.debug: print("%s: Listing on port %d" % (sys.argv[0],args.listen))
-        IOLoop.instance().start()
-
+        try:
+            app.listen(args.listen)
+            if args.debug: print("%s: Listing on port %d" % (sys.argv[0],args.listen))
+            IOLoop.instance().start()
+        except:
+            err = "%s: App could not listen on port %d" % ( sys.argv[0], args.listen ) 
+            stop_event.set()
+            print("%s: Done" % sys.argv[0])

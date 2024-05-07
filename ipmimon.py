@@ -5,6 +5,7 @@ import os
 import sys
 import traceback
 import datetime
+#from   threading import Event
 
 class IpmiMon:
     """
@@ -47,12 +48,11 @@ class IpmiMon:
         self.sensors    = []
         self.debug      = debug
 
-    def run(self):
+    def run(self, event):
         """
         This function will run a loop sampling the requested IPMI sensors with a 
         delay between samples.
         """
-    
         if not self.connected:
             raise Exception("ERR: Not connected to the IPMI interface.")
   
@@ -77,8 +77,8 @@ class IpmiMon:
 
         self.consec_errors = 0
    
-        # Sample the sensors 
-        while True:
+        # Sample the sensors continuously until 'stop' event
+        while not event.is_set():
 
             if self.dcmi_power:
                 self._sample_dcmi_power() 
@@ -89,6 +89,9 @@ class IpmiMon:
                 self._sample_sensors()
 
             time.sleep( self.delay )    
+
+        if self.debug:
+            print("%s: Ending sensor monitor loop..." % sys.argv[0])
 
     def connect(self):
         """
@@ -337,6 +340,8 @@ class IpmiMon:
 
         if self.logger: 
             message = "%d : %s" % ( record_id, value)
+            if self.debug: print("%s: emitting sensor value to logger" % sys.argv[0], message)
+
             dt = self.logger.log(message)
             if self.session_manager:
                 self.session_manager.sensor(dt, record_id, float(value) )
@@ -350,11 +355,11 @@ class IpmiMon:
 #
 if __name__ == "__main__":
 
-    ipmimon = IpmiMon(  ip="192.168.199.46", 
+    ipmimon = IpmiMon(  ip="192.168.99.61", 
                         iface="lan", # try also 'lanplus'
-                        username="admin",
-                        password="CoreDev8879OOlki",
-                        records=[18,20],
+                        username="ADMIN",
+                        password="ADMIN",
+                        records=[5029],
                         delay=0.05, 
                         debug=True)
     ipmimon.connect()
