@@ -196,5 +196,6 @@ def main():
             IOLoop.instance().start()
         except:
             err = "%s: App could not listen on port %d" % ( sys.argv[0], args.listen ) 
+            print(err)
             stop_event.set()
-            print("%s: Done" % sys.argv[0])
+            print("%s: Main thread is done" % sys.argv[0])

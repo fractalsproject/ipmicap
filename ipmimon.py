@@ -20,7 +20,7 @@ class IpmiMon:
                         username="admin", 
                         password="admin", 
                         records=[],
-                        max_consec_errors=2,
+                        max_consec_errors=50,
                         logger=None,
                         session_manager=None,
                         delay=0.1,
@@ -91,7 +91,7 @@ class IpmiMon:
             time.sleep( self.delay )    
 
         if self.debug:
-            print("%s: Ending sensor monitor loop..." % sys.argv[0])
+            print("%s: Sensor monitor loop ended." % sys.argv[0])
 
     def connect(self):
         """
