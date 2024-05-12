@@ -64,7 +64,7 @@ class IpmiMon:
             if self.nvidia>0:
                 for i in range(self.nvidia):
                     message = "SENSOR: NV%d %d 0" % (i,i)
-                    self.logger.log(message)
+                    if self.logger: self.logger.log(message)
         else:
             if len(self.sensors)==0:
                 self.get_sensors()
@@ -73,7 +73,7 @@ class IpmiMon:
                 descriptions = self.get_sensor_descriptions()
                 for descr in descriptions:
                     message = "SENSOR: %s %d %d" % (descr['name'], descr['record_id'], descr['number'] )
-                    self.logger.log(message)
+                    if self.logger: self.logger.log(message)
 
         self.consec_errors = 0
    
@@ -277,14 +277,16 @@ class IpmiMon:
             traceback.print_exc()
 
     def emit_nvidia_power(self, powers):
-        if self.logger:
-            for power in powers:
-                record_id, value = power
-                message = "%d : %s" % ( record_id, value)
+        for power in powers:
+            record_id, value = power
+            message = "%d : %s" % ( record_id, value)
+            if self.logger:
                 dt = self.logger.log(message)
-                if self.session_manager:
-                    self.session_manager.sensor(dt, record_id, float(value) )
-        else:
+            else:
+                dt = datetime.datetime.now()
+            if self.session_manager:
+                self.session_manager.sensor(dt, record_id, float(value) )
+        if self.debug:
             message = "%d : %s" % ( record_id, value)
             print(message)
 
@@ -317,11 +319,14 @@ class IpmiMon:
         if self.logger:
             message = "%d : %s" % ( record_id, value)
             dt = self.logger.log(message)
-            if self.session_manager:
-                self.session_manager.sensor(dt, record_id, float(value) )
-        else:
+        elif self.debug:
             message = "0x%04x | %9s " % (record_id, number, id_string, value, states)
             print(message)
+        else:
+            dt = datetime.datetime.now()
+
+        if self.session_manager:
+            self.session_manager.sensor(dt, record_id, float(value) )
 
 
     def emit_sdr_list_entry(self, record_id, number, id_string, value, states):
@@ -341,14 +346,15 @@ class IpmiMon:
         if self.logger: 
             message = "%d : %s" % ( record_id, value)
             if self.debug: print("%s: emitting sensor value to logger" % sys.argv[0], message)
-
             dt = self.logger.log(message)
-            if self.session_manager:
-                self.session_manager.sensor(dt, record_id, float(value) )
-        else: 
+        elif self.debug:
             message = "0x%04x | %3s | %-18s | %9s | %s" % (record_id, number, id_string, value, states)
             print(datetime.datetime.now(), message)
+        else:
+            dt = datetime.datetime.now()
 
+        if self.session_manager:
+            self.session_manager.sensor(dt, record_id, float(value) )
 
 #
 # To run the unit tests below for the IpmiMon class, type "python ipmimon.py"

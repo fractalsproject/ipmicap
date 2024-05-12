@@ -19,7 +19,8 @@ def main():
         parser.add_argument('--dcmi-power', dest='dcmi_power', action='store_true', help='Sample power via dcmi interface.')
         parser.add_argument('--nvidia',     dest='nvidia', type=int, default=0, help='Sample N Nvidia GPUs')
         parser.add_argument('--sessions',   dest='sessions', action='store_true', help='Will return power consumption via web requests.')
-        parser.add_argument('--debug',      dest='debug', action='store_true', help='Print lots of verbose debugging related messages.')
+        parser.add_argument('--debug',      dest='debug', action='store_true', help='Verbose debug mode')
+        parser.add_argument('--nologger',   dest='nologger', action='store_true', help='Bypass file logger')
 
         args    = parser.parse_args()
 
@@ -49,8 +50,11 @@ def main():
         #
         import  datetime
         path    = os.path.join( args.path, "%s" % datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") )
-        from    ipmilogger import IpmiLogger
-        logger  = IpmiLogger(path, False)
+        if args.nologger:
+            logger = None
+        else:
+            from    ipmilogger import IpmiLogger
+            logger  = IpmiLogger(path, False)
         if args.debug: print("%s: Created a logger at '%s'" % (sys.argv[0], path))
 
         #
@@ -132,7 +136,7 @@ def main():
                         parm = self.get_argument(arg,None)
                         if arg.endswith("_enc"): parm = parm = urllib.parse.unquote(parm)
                         log_item += "%s = %s" % (arg,parm)
-                    self.logger.log( log_item, echo=self.verbose)
+                    if self.logger: self.logger.log( log_item, echo=self.verbose)
                     self.write(json.dumps(1))
                 except:
                     print("%s: ERROR:" % sys.argv[0], sys.exc_info()[0], sys.exc_info()[1])
@@ -163,11 +167,11 @@ def main():
                     dt = datetime.datetime.now()
                     if start:
                         self.session_manager.start( dt, session_id )
-                        self.logger.log( "start_session = %s" % session_id, echo=True, date=dt )
+                        if self.logger: self.logger.log( "start_session = %s" % session_id, echo=True, date=dt )
                         self.write(json.dumps(1))
                     elif stop:
                         power_cons = self.session_manager.stop( dt, session_id, all_stats=all_stats )
-                        self.logger.log( "stop_session = %s" % session_id, echo=True, date=dt )
+                        if self.logger: self.logger.log( "stop_session = %s" % session_id, echo=True, date=dt )
                         self.write(json.dumps(power_cons))
 
                 except:
