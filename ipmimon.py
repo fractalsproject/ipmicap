@@ -5,7 +5,6 @@ import os
 import sys
 import traceback
 import datetime
-#from   threading import Event
 
 class IpmiMon:
     """
@@ -243,7 +242,7 @@ class IpmiMon:
             return False
 
         except:
-            print("Sample Sensor Error:", sys.exc_info()[0] )
+            print("Sample Sensor Error:", traceback.print_exc())
             return False            
 
         finally:
@@ -349,7 +348,8 @@ class IpmiMon:
             dt = self.logger.log(message)
         elif self.debug:
             message = "0x%04x | %3s | %-18s | %9s | %s" % (record_id, number, id_string, value, states)
-            print(datetime.datetime.now(), message)
+            dt = datetime.datetime.now()
+            print(dt, message)
         else:
             dt = datetime.datetime.now()
 
