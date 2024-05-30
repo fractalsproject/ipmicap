@@ -154,13 +154,15 @@ class IpmiMon:
             raise Exception("ERR: Not connected to the IPMI interface.")
 
         if self.device_id.supports_function('sdr_repository'):
-            if self.debug: print("%s: using sdr_repository interface" % type(self).__name__)
+
+            print("%s: Using 'sdr_repository' interface" % sys.argv[0])
             iter_fct = self.connection.sdr_repository_entries
         elif device_id.supports_function('sensor'):
-            if self.debug: print("%s: using sensor interface" % type(self).__name__)
+            print("%s: Using 'sensor' interface" % sys.argv[0])
             iter_fct = self.connection.device_sdr_entries
         else:
-            if self.debug: print("%s: using default interface" % type(self).__name__)
+            print("%s: Using default interface" % sys.argv[0])
+
 
         if self.debug: print("%s: Enumerating all sensors..." % type(self).__name__)
         for s in iter_fct():
