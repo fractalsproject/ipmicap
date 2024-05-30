@@ -4,6 +4,7 @@ import time
 import os
 import sys
 import traceback
+import datetime
 
 class IpmiMon:
     """
@@ -13,11 +14,12 @@ class IpmiMon:
         * samples requests sensors with a time delay between sampling
     """
 
-    def __init__(self,  ip="127.0.0.1", 
+    def __init__(self,  ip="127.0.0.1",
+                        iface="lan",
                         username="admin", 
                         password="admin", 
                         records=[],
-                        max_consec_errors=2,
+                        max_consec_errors=50,
                         logger=None,
                         session_manager=None,
                         delay=0.1,
@@ -26,6 +28,7 @@ class IpmiMon:
                         debug=False):
 
         self.ip         = ip
+        self.iface      = iface
         self.username   = username
         self.password   = password
         self.records    = records
@@ -44,12 +47,11 @@ class IpmiMon:
         self.sensors    = []
         self.debug      = debug
 
-    def run(self):
+    def run(self, event):
         """
         This function will run a loop sampling the requested IPMI sensors with a 
         delay between samples.
         """
-    
         if not self.connected:
             raise Exception("ERR: Not connected to the IPMI interface.")
   
@@ -61,7 +63,7 @@ class IpmiMon:
             if self.nvidia>0:
                 for i in range(self.nvidia):
                     message = "SENSOR: NV%d %d 0" % (i,i)
-                    self.logger.log(message)
+                    if self.logger: self.logger.log(message)
         else:
             if len(self.sensors)==0:
                 self.get_sensors()
@@ -70,12 +72,12 @@ class IpmiMon:
                 descriptions = self.get_sensor_descriptions()
                 for descr in descriptions:
                     message = "SENSOR: %s %d %d" % (descr['name'], descr['record_id'], descr['number'] )
-                    self.logger.log(message)
+                    if self.logger: self.logger.log(message)
 
         self.consec_errors = 0
    
-        # Sample the sensors 
-        while True:
+        # Sample the sensors continuously until 'stop' event
+        while not event.is_set():
 
             if self.dcmi_power:
                 self._sample_dcmi_power() 
@@ -87,13 +89,16 @@ class IpmiMon:
 
             time.sleep( self.delay )    
 
+        if self.debug:
+            print("%s: Sensor monitor loop ended." % sys.argv[0])
+
     def connect(self):
         """
         This function will connect to the IPMI interface at its
         IP address and port with provided authentication credentials.
         """
-        self.interface = pyipmi.interfaces.create_interface('ipmitool',
-                                                       interface_type='lanplus')
+        if self.debug: print("%s: using interface_type=" % type(self).__name__, self.iface)
+        self.interface = pyipmi.interfaces.create_interface('ipmitool', interface_type=self.iface)
         self.connection = pyipmi.create_connection(self.interface)
         self.connection.session.set_session_type_rmcp(self.ip, 623)
         self.connection.session.set_auth_type_user(self.username, self.password)
@@ -149,6 +154,7 @@ class IpmiMon:
             raise Exception("ERR: Not connected to the IPMI interface.")
 
         if self.device_id.supports_function('sdr_repository'):
+
             print("%s: Using 'sdr_repository' interface" % sys.argv[0])
             iter_fct = self.connection.sdr_repository_entries
         elif device_id.supports_function('sensor'):
@@ -157,7 +163,8 @@ class IpmiMon:
         else:
             print("%s: Using default interface" % sys.argv[0])
 
-        print("Enumerating all sensors...")
+
+        if self.debug: print("%s: Enumerating all sensors..." % type(self).__name__)
         for s in iter_fct():
             try:
                 device_id_string = s.device_id_string.decode("utf-8") 
@@ -237,7 +244,7 @@ class IpmiMon:
             return False
 
         except:
-            print("Sample Sensor Error:", sys.exc_info()[0] )
+            print("Sample Sensor Error:", traceback.print_exc())
             return False            
 
         finally:
@@ -271,14 +278,16 @@ class IpmiMon:
             traceback.print_exc()
 
     def emit_nvidia_power(self, powers):
-        if self.logger:
-            for power in powers:
-                record_id, value = power
-                message = "%d : %s" % ( record_id, value)
+        for power in powers:
+            record_id, value = power
+            message = "%d : %s" % ( record_id, value)
+            if self.logger:
                 dt = self.logger.log(message)
-                if self.session_manager:
-                    self.session_manager.sensor(dt, record_id, float(value) )
-        else:
+            else:
+                dt = datetime.datetime.now()
+            if self.session_manager:
+                self.session_manager.sensor(dt, record_id, float(value) )
+        if self.debug:
             message = "%d : %s" % ( record_id, value)
             print(message)
 
@@ -311,11 +320,14 @@ class IpmiMon:
         if self.logger:
             message = "%d : %s" % ( record_id, value)
             dt = self.logger.log(message)
-            if self.session_manager:
-                self.session_manager.sensor(dt, record_id, float(value) )
-        else:
+        elif self.debug:
             message = "0x%04x | %9s " % (record_id, number, id_string, value, states)
             print(message)
+        else:
+            dt = datetime.datetime.now()
+
+        if self.session_manager:
+            self.session_manager.sensor(dt, record_id, float(value) )
 
 
     def emit_sdr_list_entry(self, record_id, number, id_string, value, states):
@@ -334,24 +346,31 @@ class IpmiMon:
 
         if self.logger: 
             message = "%d : %s" % ( record_id, value)
+            if self.debug: print("%s: emitting sensor value to logger" % sys.argv[0], message)
             dt = self.logger.log(message)
-            if self.session_manager:
-                self.session_manager.sensor(dt, record_id, float(value) )
-        else: 
+        elif self.debug:
             message = "0x%04x | %3s | %-18s | %9s | %s" % (record_id, number, id_string, value, states)
-            print(message)
+            dt = datetime.datetime.now()
+            print(dt, message)
+        else:
+            dt = datetime.datetime.now()
 
+        if self.session_manager:
+            self.session_manager.sensor(dt, record_id, float(value) )
 
 #
 # To run the unit tests below for the IpmiMon class, type "python ipmimon.py"
 #
 if __name__ == "__main__":
 
-    ipmimon = IpmiMon(  ip="192.168.99.35", 
-                        username="admin",
-                        password="admin",
-                        records=[18,20] )
+    ipmimon = IpmiMon(  ip="192.168.99.61", 
+                        iface="lan", # try also 'lanplus'
+                        username="ADMIN",
+                        password="ADMIN",
+                        records=[5029],
+                        delay=0.05, 
+                        debug=True)
     ipmimon.connect()
-    ipmimon.enumerate_sensors()
-    #ipmimon.run()
+    #ipmimon.enumerate_sensors()
+    ipmimon.run()
 
