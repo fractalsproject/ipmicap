@@ -213,6 +213,7 @@ class IpmiMon:
         for s in self.sensors:
 
             if self._sample_sensor(s)==False:
+                print("%s: Incrementing consec errors from" % sys.argv[0], self.consec_errors)
                 self.consec_errors += 1
 
             if self.consec_errors >= self.max_consec_errors:
@@ -236,15 +237,17 @@ class IpmiMon:
                     number = s.number
 
                 self.emit_sdr_list_entry(s.id, number, s.device_id_string, value, states)
-                return value
+                #return value # lets assume that if we got here, everything is ok
+                return True
 
         except pyipmi.errors.CompletionCodeError as e:
+            print("%s: CompletionCodeError" % sys.argv[0])
             if s.type in (pyipmi.sdr.SDR_TYPE_COMPACT_SENSOR_RECORD, pyipmi.sdr.SDR_TYPE_FULL_SENSOR_RECORD):
-                print('0x{:04x} | {:3d} | {:18s} | ERR: CC=0x{:02x}'.format( s.id, s.number, s.device_id_string, e.cc))
+                print('%s: CompletionCodeError: 0x{:04x} | {:3d} | {:18s} | ERR: CC=0x{:02x}'.format( sys.argv[0], s.id, s.number, s.device_id_string, e.cc))
             return False
 
         except:
-            print("Sample Sensor Error:", traceback.print_exc())
+            print("%s: Sample Sensor Error:" % sys.argv[0], traceback.print_exc())
             return False            
 
         finally:
