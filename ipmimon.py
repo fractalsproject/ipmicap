@@ -167,10 +167,12 @@ class IpmiMon:
         if self.debug: print("%s: Enumerating all sensors..." % type(self).__name__)
         for s in iter_fct():
             try:
-                device_id_string = s.device_id_string.decode("utf-8") 
+                #NOTE: decoding might be needed - device_id_string = s.device_id_string.decode("utf-8") 
+                device_id_string = s.device_id_string
                 print( "%s\t\trecord_id=%d" % (device_id_string, s.id) )
                 #print( "%s" % (device_id_string) )
             except:
+                if self.debug: traceback.print_exc() 
                 pass
         print("Done.")
 
