@@ -34,7 +34,7 @@ IPMICAP was developed and tested using the following:
 
 ## Enumerate Your Sensors
 
-* Run the following:  "python ipmicap  --ip <IPMI_IP_ADDRESS>  --enumerate"
+* Run the following:  "python ipmicap  --ip <IPMI_IP_ADDRESS>  --enumerate" (Note you might need to supply --username and --password)
 
 * This will connect to the IPMI interface and enumerate all available sensors (the name and the record id of each sensor.)
 
