@@ -39,7 +39,8 @@ class IpmiMon:
         self.dcmi_power = dcmi_power
         self.nvidia     = nvidia
         self.connected  = False
-        self.consec_errors = 0
+        self.consec_ipmi_errors = 0
+        self.consec_nvid_errors = 0
         self.interface  = None
         self.connection = None
         self.device_id  = None
@@ -47,7 +48,7 @@ class IpmiMon:
         self.sensors    = []
         self.debug      = debug
 
-    def run(self, event):
+    def run_ipmi(self, event):
         """
         This function will run a loop sampling the requested IPMI sensors with a 
         delay between samples.
@@ -55,32 +56,22 @@ class IpmiMon:
         if not self.connected:
             raise Exception("ERR: Not connected to the IPMI interface.")
   
-        # Intialize/validate the sensors 
-        if self.dcmi_power: 
-            if self.logger:
-                message = "SENSOR: dcmi_power -1 0"
-                self.logger.log(message)
-            if self.nvidia>0:
-                for i in range(self.nvidia):
-                    message = "SENSOR: NV%d %d 0" % (i,i)
-                    if self.logger: self.logger.log(message)
-        else:
-            if len(self.sensors)==0:
-                self.get_sensors()
+        if len(self.sensors)==0:
+            self.get_sensors()
 
-            if self.logger:
-                descriptions = self.get_sensor_descriptions()
-                for descr in descriptions:
-                    message = "SENSOR: %s %d %d" % (descr['name'], descr['record_id'], descr['number'] )
-                    if self.logger: self.logger.log(message)
+        if self.logger:
+            descriptions = self.get_sensor_descriptions()
+            for descr in descriptions:
+                message = "SENSOR: %s %d %d" % (descr['name'], descr['record_id'], descr['number'] )
+                if self.logger: self.logger.log(message)
 
-        self.consec_errors = 0
+        self.consec_ipmi_errors = 0
    
         # Sample the sensors continuously until 'stop' event
         while not event.is_set():
 
             if self.dcmi_power:
-                self._sample_dcmi_power() 
+                #GW self._sample_dcmi_power() 
 
                 if self.nvidia>0:
                     self._sample_nvidia()
@@ -90,7 +81,30 @@ class IpmiMon:
             time.sleep( self.delay )    
 
         if self.debug:
-            print("%s: Sensor monitor loop ended." % sys.argv[0])
+            print("%s: IPMI sensor monitor loop ended." % sys.argv[0])
+
+    def run_nv(self, event):
+        """
+        This function will run a loop sampling the requested NVidia devices with a
+        delay betweem samples.
+        """
+        if self.nvidia<=0:
+            raise Exception("Inner loop expecting valid nvidia device request")
+
+        for i in range(self.nvidia):
+            message = "SENSOR: NV%d %d 0" % (i,i)
+            if self.logger: self.logger.log(message)
+
+        # Sample the sensors continuously until 'stop' event
+        while not event.is_set():
+
+            self._sample_nvidia()
+
+            time.sleep( self.delay )
+
+        if self.debug:
+            print("%s: Nvidia sensor monitor loop ended." % sys.argv[0])
+
 
     def connect(self):
         """
@@ -215,11 +229,11 @@ class IpmiMon:
         for s in self.sensors:
 
             if self._sample_sensor(s)==False:
-                print("%s: Incrementing consec errors from" % sys.argv[0], self.consec_errors)
-                self.consec_errors += 1
+                print("%s: Incrementing consec ipmi errors from" % sys.argv[0], self.consec_ipmi_errors)
+                self.consec_ipmi_errors += 1
 
-            if self.consec_errors >= self.max_consec_errors:
-                raise Exception("ERR: Maximum consecutive errors reached.")
+            if self.consec_ipmi_errors >= self.max_consec_errors:
+                raise Exception("ERR: Maximum consecutive ipmi errors reached.")
 
     def _sample_sensor(self,s):
 
