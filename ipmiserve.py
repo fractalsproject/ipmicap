@@ -17,7 +17,8 @@ def main():
         parser.add_argument('--delay',      dest='delay', type=float, default=0.25, help='The delay/sleep time between queries to the IPMI interface for a set of sensors')
         parser.add_argument('--path',       dest='path', default="/tmp/ipmi", help='Supply a directory where timestamped log files will be written.')
         parser.add_argument('--dcmi-power', dest='dcmi_power', action='store_true', help='Sample power via dcmi interface.')
-        parser.add_argument('--nvidia',     dest='nvidia', type=int, default=0, help='Sample N Nvidia GPUs')
+        parser.add_argument('--nvidia',     dest='nvidia', type=int, default=-1, help='Sample power for Nvidia GPU')
+        parser.add_argument('--g2',         dest='g2', type=int, default=-1, help='Sample power for GSI G2')
         parser.add_argument('--sessions',   dest='sessions', action='store_true', help='Will return power consumption via web requests.')
         parser.add_argument('--debug',      dest='debug', action='store_true', help='Verbose debug mode')
         parser.add_argument('--nologger',   dest='nologger', action='store_true', help='Bypass file logger')
@@ -31,11 +32,12 @@ def main():
             parser.print_help()
             parser.exit()
             sys.exit(1)
-        elif args.nvidia>0 and not args.dcmi_power:
-            if args.debug: print("%s: --nvidia [N] requires the --dcmi-power flag" % sys.argv[0])
-            parser.print_help()
-            parser.exit()
-            sys.exit(1)
+        #GW: We used to require dcmi_power for DGX systems
+        #GW: elif args.nvidia>0 and not args.dcmi_power:
+        #GW:    if args.debug: print("%s: --nvidia [N] requires the --dcmi-power flag" % sys.argv[0])
+        #GW:    parser.print_help()
+        #GW:    parser.exit()
+        #GW:    sys.exit(1)
     
         #
         # Create the output directory as needed
@@ -94,9 +96,9 @@ def main():
         #
         # Monitor sensors ( don't listen for http commands )
         #
-        if  not args.listen:
+        if not args.listen:
             if args.debug: print("%s: Monitoring the following records: " % sys.argv[0],args.records )
-            mon.run()
+            mon.run_ipmi() # main thread stops here
 
         #
         # Listen and respond to http messages
@@ -113,16 +115,38 @@ def main():
         # The actual ipmi sensor monitoring happens in a thread pool
         stop_event = Event()
         executor = concurrent.futures.ThreadPoolExecutor(8)
-        def task(mon):
+        def ipmi_task(mon):
             try:
-                mon.run(stop_event)
+                mon.run_ipmi(stop_event)
             except:
                 print("%s: Critical error in threadpool ipmimon executor loop" % sys.argv[0])
                 traceback.print_exc()
-        executor.submit(task, mon)
+        executor.submit(ipmi_task, mon)
+
+        # The actual nvidia sensor monitoring happens in a thread pool
+        if args.nvidia>=0:
+            nv_stop_event = Event()
+            def nv_task(mon):
+                try:
+                    mon.run_nv(stop_event)
+                except:
+                    print("%s: Critical error in threadpool nvidia mon executor loop" % sys.argv[0])
+                    traceback.print_exc()
+            executor.submit(nv_task, mon)
+
+        # The actual G2 sensor monitoring happens in a thread pool
+        if args.g2>=0:
+            g2_stop_event = Event()
+            def g2_task(mon):
+                try:
+                    mon.run_g2(stop_event)
+                except:
+                    print("%s: Critical error in threadpool g2 mon executor loop" % sys.argv[0])
+                    traceback.print_exc()
+            executor.submit(g2_task, mon)
 
         class LogHandler(tornado.web.RequestHandler):
-
+            """Handles http log requests"""
             def initialize(self, logger, verbose):
                 self.logger = logger
                 self.verbose = verbose
@@ -142,7 +166,7 @@ def main():
                     print("%s: ERROR:" % sys.argv[0], sys.exc_info()[0], sys.exc_info()[1])
 
         class SessionHandler(tornado.web.RequestHandler):
-
+            """Handles http session requests"""
             def initialize(self, session_manager, logger):
                 self.session_manager = session_manager
                 self.logger = logger
@@ -178,6 +202,7 @@ def main():
                     print("%s: ERROR:" % sys.argv[0], sys.exc_info()[0], sys.exc_info()[1])
                     
         if args.sessions:
+            # Run an http server which handles session and log requests
             app = tornado.web.Application(
                 [       
                     (r"/log", LogHandler, {'logger':logger, 'verbose':args.debug} ),
@@ -187,6 +212,7 @@ def main():
             app.logger = logger
             app.session_manager = session_manager
         else:
+            # Run an http server which handles log requests
             app = tornado.web.Application(
                 [       
                     (r"/log", LogHandler, {'logger':logger} ),
