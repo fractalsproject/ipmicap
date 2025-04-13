@@ -17,7 +17,8 @@ def main():
         parser.add_argument('--delay',      dest='delay', type=float, default=0.25, help='The delay/sleep time between queries to the IPMI interface for a set of sensors')
         parser.add_argument('--path',       dest='path', default="/tmp/ipmi", help='Supply a directory where timestamped log files will be written.')
         parser.add_argument('--dcmi-power', dest='dcmi_power', action='store_true', help='Sample power via dcmi interface.')
-        parser.add_argument('--nvidia',     dest='nvidia', type=int, default=0, help='Sample N Nvidia GPUs')
+        parser.add_argument('--nvidia',     dest='nvidia', type=int, default=-1, help='Sample power for Nvidia GPU')
+        parser.add_argument('--g2',         dest='g2', type=int, default=-1, help='Sample power for GSI G2')
         parser.add_argument('--sessions',   dest='sessions', action='store_true', help='Will return power consumption via web requests.')
         parser.add_argument('--debug',      dest='debug', action='store_true', help='Verbose debug mode')
         parser.add_argument('--nologger',   dest='nologger', action='store_true', help='Bypass file logger')
@@ -31,11 +32,12 @@ def main():
             parser.print_help()
             parser.exit()
             sys.exit(1)
-        #GW elif args.nvidia>0 and not args.dcmi_power:
-        #GW    if args.debug: print("%s: --nvidia [N] requires the --dcmi-power flag" % sys.argv[0])
-        #GW    parser.print_help()
-        #GW    parser.exit()
-        #GW    sys.exit(1)
+        #GW: We used to require dcmi_power for DGX systems
+        #GW: elif args.nvidia>0 and not args.dcmi_power:
+        #GW:    if args.debug: print("%s: --nvidia [N] requires the --dcmi-power flag" % sys.argv[0])
+        #GW:    parser.print_help()
+        #GW:    parser.exit()
+        #GW:    sys.exit(1)
     
         #
         # Create the output directory as needed
@@ -121,15 +123,27 @@ def main():
                 traceback.print_exc()
         executor.submit(ipmi_task, mon)
 
-        # The actual nvidia sensor monitoring happends in a thread pool
-        nv_stop_event = Event()
-        def nv_task(mon):
-            try:
-                mon.run_nv(stop_event)
-            except:
-                print("%s: Critical error in threadpool nvidia mon executor loop" % sys.argv[0])
-                traceback.print_exc()
-        executor.submit(nv_task, mon)
+        # The actual nvidia sensor monitoring happens in a thread pool
+        if args.nvidia>=0:
+            nv_stop_event = Event()
+            def nv_task(mon):
+                try:
+                    mon.run_nv(stop_event)
+                except:
+                    print("%s: Critical error in threadpool nvidia mon executor loop" % sys.argv[0])
+                    traceback.print_exc()
+            executor.submit(nv_task, mon)
+
+        # The actual G2 sensor monitoring happens in a thread pool
+        if args.g2>=0:
+            g2_stop_event = Event()
+            def g2_task(mon):
+                try:
+                    mon.run_g2(stop_event)
+                except:
+                    print("%s: Critical error in threadpool g2 mon executor loop" % sys.argv[0])
+                    traceback.print_exc()
+            executor.submit(g2_task, mon)
 
         class LogHandler(tornado.web.RequestHandler):
             """Handles http log requests"""
