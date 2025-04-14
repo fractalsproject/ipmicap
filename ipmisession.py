@@ -60,6 +60,16 @@ class IpmiSessionManager:
         else:
             pass
 
+    def g2_sensor(self, dt, g2, value):
+
+        sname = "apu-%02d" % g2
+        self.sensors[sname] = True
+        for session_id in self.capture_sessions.keys():
+            if self.started[session_id]:
+                self.capture_sessions[session_id].append( [dt, sname, value] )
+        else:
+            pass
+
     def _compute_session(self, start_time, end_time, session_id):
 
         ready_for_df = []
@@ -95,6 +105,9 @@ class IpmiSessionManager:
         for sensor_id in self.sensors.keys():
             if type(sensor_id)==type("") and sensor_id.startswith("nvidia"):
                 print("Warning: Skipping nvidia sensor in session total power compute")
+                continue
+            if type(sensor_id)==type("") and sensor_id.startswith("apu"):
+                print("Warning: Skipping apu sensor in session total power compute")
                 continue
             tot_power += powers[sensor_id]
 

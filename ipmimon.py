@@ -5,6 +5,14 @@ import os
 import sys
 import traceback
 import datetime
+import re
+
+#
+# configuration
+#
+#Power (V)       : 27.429188
+GSI_TOOL_POWER_REGEX = re.compile(".*Power\s*\(V\)\s+\:\s+(.*)", re.MULTILINE)
+GSI_TOOL_POWER_REGEX = "Power\s*\(V\)\s+\:\s+(.*)"
 
 class IpmiMon:
     """
@@ -24,7 +32,8 @@ class IpmiMon:
                         session_manager=None,
                         delay=0.1,
                         dcmi_power=False,
-                        nvidia=0,
+                        nvidia=-1,
+                        g2 = -1,
                         debug=False):
 
         self.ip         = ip
@@ -38,6 +47,7 @@ class IpmiMon:
         self.session_manager = session_manager
         self.dcmi_power = dcmi_power
         self.nvidia     = nvidia
+        self.g2         = g2
         self.connected  = False
         self.consec_ipmi_errors = 0
         self.consec_nvid_errors = 0
@@ -320,29 +330,34 @@ class IpmiMon:
                 message = "nvidia: %d : %s" % ( nv_id, value)
                 print(message)
 
+    def emit_g2_power(self, power):
+            message = "%d : %f" % ( self.g2, power)
+            if self.logger:
+                dt = self.logger.log(message)
+            else:
+                dt = datetime.datetime.now()
+            if self.session_manager:
+                self.session_manager.g2_sensor(dt, self.g2, power )
+            if self.debug:
+                message = "g2: %d : %f" % ( self.g2, power)
+                print(message)
+
     def _sample_g2(self):
         try:
             if self.debug: print("About to call gsi_tool for power...")
 
-            cmd = "gsi_tool --query-gpu=index,power.draw --format=csv"
-            if self.debug: print("running gsi_tool command", cmd)
+            addr = "apu-%02d" % self.g2
+            cmd = "gsi_tool info %s" % addr
+            if self.debug: print("running gsi_tool command:", cmd)
             stream = os.popen(cmd)
             outp = stream.read()
             if self.debug: print("result of cmd=", outp)
 
-            # parse csv shape response
-            #lines = [ ln for ln in outp.split('\n') if ln.strip()!="" ]
-            #if self.debug: print("nvidia lines", lines, len(lines), self.nvidia)
-            #if len(lines)!= self.nvidia + 2:
-            #    errstr = "ERROR: Could not find %d Nvidia boards but found %d" % ( self.nvidia, len(lines)-1 )
-            #    raise Exception(errstr)
-
-            #powers = [ (int(ln.strip().split(",")[0]), \
-            #            float(ln.strip().split(",")[1].strip().split()[0] )) \
-            #            for ln in lines[1:] ]
-            #if self.debug: print("nvidia power(s)", powers)
-
-            #self.emit_nvidia_power( powers )
+            matches = re.findall(GSI_TOOL_POWER_REGEX,outp)
+            if self.debug: print("regex matches:", matches)
+       
+            power = float(matches[0])
+            self.emit_g2_power( power )
 
         except:
             print("Sample g2 power error:", sys.exc_info()[0])
