@@ -81,6 +81,7 @@ def main():
                             delay       = args.delay,
                             dcmi_power  = args.dcmi_power,
                             nvidia      = args.nvidia,
+                            g2          = args.g2,
                             debug       = args.debug )
         if args.debug: print("%s: Connecting to the IPMI interface at %s..." % ( sys.argv[0], args.ip))
         mon.connect()
