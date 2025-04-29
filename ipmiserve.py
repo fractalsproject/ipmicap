@@ -5,6 +5,7 @@ def main():
         #
         import  sys
         import  argparse
+        import traceback
         parser  = argparse.ArgumentParser(description='IPMI Monitoring Tool.')
         parser.add_argument('--ip',         dest='ip', required=True, help='The IP address of the IPMI interface')
         parser.add_argument('--port',       dest='port', type=int, default=623, help='The port of the IPMI interface')
@@ -22,6 +23,7 @@ def main():
         parser.add_argument('--sessions',   dest='sessions', action='store_true', help='Will return power consumption via web requests.')
         parser.add_argument('--debug',      dest='debug', action='store_true', help='Verbose debug mode')
         parser.add_argument('--nologger',   dest='nologger', action='store_true', help='Bypass file logger')
+        parser.add_argument('--include-nvidia-in-tot-power',   dest='include_nvidia_in_tot_power', action='store_true', help='Add nvidia power to total power calculation')
 
         args    = parser.parse_args()
 
@@ -32,12 +34,12 @@ def main():
             parser.print_help()
             parser.exit()
             sys.exit(1)
-        #GW: We used to require dcmi_power for DGX systems
-        #GW: elif args.nvidia>0 and not args.dcmi_power:
-        #GW:    if args.debug: print("%s: --nvidia [N] requires the --dcmi-power flag" % sys.argv[0])
-        #GW:    parser.print_help()
-        #GW:    parser.exit()
-        #GW:    sys.exit(1)
+        # We used to require dcmi_power for DGX systems
+        # elif args.nvidia>0 and not args.dcmi_power:
+        #    if args.debug: print("%s: --nvidia [N] requires the --dcmi-power flag" % sys.argv[0])
+        #    parser.print_help()
+        #    parser.exit()
+        #    sys.exit(1)
     
         #
         # Create the output directory as needed
@@ -65,24 +67,25 @@ def main():
         from ipmisession import IpmiSessionManager
         session_manager=None
         if args.sessions:
-            session_manager = IpmiSessionManager( args.debug )
+            session_manager = IpmiSessionManager( args.include_nvidia_in_tot_power, args.debug )
 
         #
         # Connect to the IPMI interface
         #
         from    ipmimon import IpmiMon
-        mon     = IpmiMon(  ip          = args.ip, 
-                            iface       = args.iface,
-                            username    = args.username,
-                            password    = args.password,
-                            records     = args.records,
-                            logger      = logger,
-                            session_manager  = session_manager,
-                            delay       = args.delay,
-                            dcmi_power  = args.dcmi_power,
-                            nvidia      = args.nvidia,
-                            g2          = args.g2,
-                            debug       = args.debug )
+        mon     = IpmiMon(  ip              = args.ip, 
+                            iface           = args.iface,
+                            username        = args.username,
+                            password        = args.password,
+                            records         = args.records,
+                            logger          = logger,
+                            session_manager = session_manager,
+                            delay           = args.delay,
+                            dcmi_power      = args.dcmi_power,
+                            nvidia          = args.nvidia,
+                            g2              = args.g2,
+                            include_nvidia_in_tot_power  = args.include_nvidia_in_tot_power,
+                            debug           = args.debug )
         if args.debug: print("%s: Connecting to the IPMI interface at %s..." % ( sys.argv[0], args.ip))
         mon.connect()
         if args.debug: print("%s: Connected to the IPMI interface at %s." % (sys.argv[0],args.ip))
@@ -201,6 +204,7 @@ def main():
 
                 except:
                     print("%s: ERROR:" % sys.argv[0], sys.exc_info()[0], sys.exc_info()[1])
+                    traceback.print_exc()
                     
         if args.sessions:
             # Run an http server which handles session and log requests

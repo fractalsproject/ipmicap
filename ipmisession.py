@@ -11,12 +11,13 @@ class IpmiSessionManager:
     collected session sensor data.
     """
 
-    def __init__(self, debug=False):
+    def __init__(self, include_nvidia_in_tot_power=False, debug=False):
 
         self.session_started    = False
         self.started            = {}
         self.sensors            = {}
         self.capture_sessions   = {}
+        self.include_nvidia_in_tot_power = include_nvidia_in_tot_power
         self.debug              = debug
 
     def start(self, dt, session_id):
@@ -104,8 +105,11 @@ class IpmiSessionManager:
         tot_power = 0
         for sensor_id in self.sensors.keys():
             if type(sensor_id)==type("") and sensor_id.startswith("nvidia"):
-                print("Warning: Skipping nvidia sensor in session total power compute")
-                continue
+                if self.include_nvidia_in_tot_power:
+                    print("Warning: Including nvidia sensor in session total power compute")
+                else:
+                    print("Warning: Skipping nvidia sensor in session total power compute")
+                    continue
             if type(sensor_id)==type("") and sensor_id.startswith("apu"):
                 print("Warning: Skipping apu sensor in session total power compute")
                 continue
