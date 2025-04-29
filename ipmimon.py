@@ -34,6 +34,7 @@ class IpmiMon:
                         dcmi_power=False,
                         nvidia=-1,
                         g2 = -1,
+                        include_nvidia_in_tot_power = False,
                         debug=False):
 
         self.ip         = ip
@@ -48,6 +49,7 @@ class IpmiMon:
         self.dcmi_power = dcmi_power
         self.nvidia     = nvidia
         self.g2         = g2
+        self.include_nvidia_in_tot_power = include_nvidia_in_tot_power
         self.connected  = False
         self.consec_ipmi_errors = 0
         self.consec_nvid_errors = 0
